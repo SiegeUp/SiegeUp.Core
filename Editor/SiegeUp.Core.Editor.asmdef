@@ -1,0 +1,18 @@
+{
+    "name": "SiegeUp.Core.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:db5b293de3db96b4cb850684147fcd08"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

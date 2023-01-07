@@ -1,0 +1,8 @@
+{
+  "name": "com.siegeup.core",
+  "version": "1.2.0",
+  "displayName": "SiegeUp.Core",
+  "description": "SiegeUp core module includes all base components for construction and serializtion of game objects. Useful for modding and utilities.",
+  "unity": "2021.3",
+  "license": "Abuksigun SiegeUp"
+}
