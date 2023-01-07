@@ -7,6 +7,7 @@ using UnityEngine;
 
 namespace SiegeUp.Core
 {
+    [AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false)]
     public class ComponentId : Attribute
     {
         public ComponentId(int id)
@@ -17,6 +18,7 @@ namespace SiegeUp.Core
         public int Id { get; private set; }
     }
 
+    [AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
     public class MethodId : Attribute
     {
         public MethodId(int id = -1)

@@ -41,9 +41,7 @@ namespace SiegeUp.Core
             foreach (var type in mainAssembly.GetTypes())
             {
                 var attributes = type.GetCustomAttributes(typeof(ComponentId), false);
-                if (attributes.Length > 1)
-                    Debug.LogError("Multiple ComponentIds in " + type.Name);
-                else if (attributes.Length == 1)
+                if (attributes.Length == 1)
                 {
                     var attribute = attributes[0] as ComponentId;
                     if (componentsIdMap.ContainsKey(attribute.Id))
@@ -64,11 +62,7 @@ namespace SiegeUp.Core
                     foreach (var method in methods)
                     {
                         var methodIds = method.GetCustomAttributes(typeof(MethodId), false);
-                        if (methodIds.Length > 1)
-                        {
-                            Debug.LogError("Multiple MethodIds in " + type.Name + "." + method.Name);
-                        }
-                        else if (methodIds.Length == 1)
+                        if (methodIds.Length == 1)
                         {
                             var realMethod = Array.Find(methods, i => i.Name == method.Name && i.GetCustomAttributes(typeof(MethodId), false).Length == 0);
                             var methodId = methodIds[0] as MethodId;
