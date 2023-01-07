@@ -61,21 +61,21 @@ namespace SiegeUp.Core
     }
 
     [Serializable]
-    public struct AutoSerialisedField
+    public struct AutoSerializedField
     {
         public string name;
         public string value;
     }
 
     [Serializable]
-    public class AutoSerialisedObjectBin
+    public class AutoSerializedObjectBin
     {
         [AutoSerialize(1)]
-        public List<AutoSerialisedFieldBin> fields = new();
+        public List<AutoSerializedFieldBin> fields = new();
     }
 
     [Serializable]
-    public struct AutoSerialisedFieldBin : ISerializationCallbackReceiver
+    public struct AutoSerializedFieldBin : ISerializationCallbackReceiver
     {
         [AutoSerialize(1)]
         public int id;
@@ -102,9 +102,9 @@ namespace SiegeUp.Core
     }
 
     [Serializable]
-    public class AutoSerialisedObject
+    public class AutoSerializedObject
     {
-        public List<AutoSerialisedField> autoSerialiedFields = new();
+        public List<AutoSerializedField> autoSerializedFields = new();
     }
 
     public class ObjectContext
@@ -135,7 +135,6 @@ namespace SiegeUp.Core
         {
         }
     }
-
 
     public class AutoSerializeTool
     {
@@ -461,9 +460,9 @@ namespace SiegeUp.Core
             }
         }
 
-        public static List<AutoSerialisedFieldBin> SerializeObjectFields(object obj, object baseObj)
+        public static List<AutoSerializedFieldBin> SerializeObjectFields(object obj, object baseObj)
         {
-            var serializedFields = new List<AutoSerialisedFieldBin>();
+            var serializedFields = new List<AutoSerializedFieldBin>();
 
             var type = obj.GetType();
             var cache = GetClassReflectionCache(type);
@@ -474,7 +473,7 @@ namespace SiegeUp.Core
                 {
                     var baseValue = baseObj != null ? field.fieldInfo.GetValue(baseObj) : null;
                     if (field.alwaysSerialize || !value.Equals(baseValue))
-                        serializedFields.Add(new AutoSerialisedFieldBin { id = field.id, data = Serialize(value, field.fieldInfo.FieldType) });
+                        serializedFields.Add(new AutoSerializedFieldBin { id = field.id, data = Serialize(value, field.fieldInfo.FieldType) });
                 }
             }
 
@@ -737,7 +736,7 @@ namespace SiegeUp.Core
             }
         }
 
-        public static void DeserializeObjectFields(List<AutoSerialisedFieldBin> serializedFields, ObjectContext context)
+        public static void DeserializeObjectFields(List<AutoSerializedFieldBin> serializedFields, ObjectContext context)
         {
             var cache = GetClassReflectionCache(context.type);
             foreach (var serializedField in serializedFields)

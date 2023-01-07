@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace SiegeUp.Core
 {
@@ -16,7 +17,7 @@ namespace SiegeUp.Core
         [AutoSerialize(1), QuickEdit, SerializeField]
         RangeShapeType rangeType = RangeShapeType.Sphere;
 
-        [AutoSerialize(2), QuickEdit, SerializeField]
+        [AutoSerialize(2), QuickEdit, SerializeField, FormerlySerializedAs("range")]
         float radius;
 
         [AutoSerialize(3), QuickEdit, SerializeField]
