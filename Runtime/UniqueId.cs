@@ -10,8 +10,6 @@ namespace SiegeUp.Core
     [ExecuteInEditMode]
     public class UniqueId : MonoBehaviour
     {
-        // global lookup of IDs to Components - we can esnure at edit time that no two 
-        // components which are loaded at the same time have the same ID. 
         static Dictionary<string, UniqueId> allGuids = new();
 
         [SerializeField]
@@ -60,24 +58,15 @@ namespace SiegeUp.Core
             allGuids.Add(uniqueId, this);
         }
 
-        // When we get destroyed (which happens when unloading a level)
-        // we must remove ourselves from the global list otherwise the
-        // entry still hangs around when we reload the same level again
-        // but now the THIS pointer has changed and end up changing 
-        // our ID
         void OnDestroy()
         {
             if (uniqueId != null)
                 allGuids.Remove(uniqueId);
         }
 
-        // Only compile the code in an editor build
 #if UNITY_EDITOR
-
-        // Whenever something changes in the editor (note the [ExecuteInEditMode])
         void Update()
         {
-            // Don't do anything when running the game
             if (Application.isPlaying)
                 return;
 
@@ -92,14 +81,11 @@ namespace SiegeUp.Core
                 EditorSceneManager.MarkSceneDirty(gameObject.scene);
             }
 
-            // We can be sure that the key is unique - now make sure we have 
-            // it in our list
             if (!allGuids.ContainsKey(uniqueId))
             {
                 allGuids.Add(uniqueId, this);
             }
         }
-
 #endif
     }
 }
