@@ -78,7 +78,7 @@ namespace SiegeUp.Core
             return IsRectInRange2D(new Vector2(corner.x, corner.z), new Vector2(size.x, size.z), new Vector2(pos.x, pos.z), range);
         }
 
-        public static RectInt GetRectFromBoxWorld(Vector3 position, Quaternion rotation, BoundingBoxComponent boundingBox)
+        public static RectInt GetRectFromBoxWorld(Vector3 position, Quaternion rotation, BoundingBox boundingBox)
         {
             var rectLocal = boundingBox.GetRect(rotation);
 

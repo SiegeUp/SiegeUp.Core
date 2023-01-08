@@ -5,14 +5,14 @@ using SiegeUp.Core;
 
 namespace SiegeUp.Core.Editor
 {
-    [CustomEditor(typeof(BoundingBoxComponent))]
+    [CustomEditor(typeof(BoundingBox))]
     public class BoundingBoxEditor : UnityEditor.Editor
     {
         BoxBoundsHandle boundsHandle = new BoxBoundsHandle();
 
         void OnSceneGUI()
         {
-            BoundingBoxComponent t = (target as BoundingBoxComponent);
+            BoundingBox t = (target as BoundingBox);
 
             var boxCollider = t.GetComponent<BoxCollider>();
             if (boxCollider && boxCollider.enabled)

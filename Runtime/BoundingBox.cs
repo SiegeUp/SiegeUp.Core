@@ -3,7 +3,7 @@
 namespace SiegeUp.Core
 {
     [ExecuteInEditMode]
-    public class BoundingBoxComponent : MonoBehaviour
+    public class BoundingBox : MonoBehaviour
     {
         [SerializeField]
         bool passable = false;
@@ -17,10 +17,7 @@ namespace SiegeUp.Core
         public Vector3 SizeSnapped(float snapStep)
         {
             var tmpRawSize = RawSize();
-            var actualSize = new Vector3(
-                SnapValue(tmpRawSize.x, snapStep),
-                0,
-                SnapValue(tmpRawSize.z, snapStep));
+            var actualSize = new Vector3(SnapValue(tmpRawSize.x, snapStep), 0, SnapValue(tmpRawSize.z, snapStep));
             return actualSize;
         }
 
@@ -38,11 +35,7 @@ namespace SiegeUp.Core
             var newMin = new Vector2(Mathf.Min(topLeftRot.x, bottomRightRot.x), Mathf.Min(topLeftRot.z, bottomRightRot.z));
             var newMax = new Vector2(Mathf.Max(topLeftRot.x, bottomRightRot.x), Mathf.Max(topLeftRot.z, bottomRightRot.z));
 
-            var rect = new Rect(
-                newMin.x,
-                newMin.y,
-                newMax.x - newMin.x,
-                newMax.y - newMin.y);
+            var rect = new Rect(newMin.x, newMin.y, newMax.x - newMin.x, newMax.y - newMin.y);
 
             return rect;
         }

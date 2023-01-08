@@ -6,17 +6,17 @@ namespace SiegeUp.Core
     public class BoundingBoxList : MonoBehaviour
     {
         [SerializeField]
-        List<BoundingBoxComponent> boundingBoxes;
+        List<BoundingBox> boundingBoxes;
 
-        public IReadOnlyList<BoundingBoxComponent> BoundingBoxes => boundingBoxes;
+        public IReadOnlyList<BoundingBox> BoundingBoxes => boundingBoxes;
 
-        public BoundingBoxComponent MainBound => boundingBoxes.Count > 0 ? boundingBoxes[0] : null;
+        public BoundingBox MainBound => boundingBoxes.Count > 0 ? boundingBoxes[0] : null;
 
 #if UNITY_EDITOR
         [ContextMenu("Find all bounds")]
         public void FindAllBounds()
         {
-            boundingBoxes = new List<BoundingBoxComponent>(GetComponentsInChildren<BoundingBoxComponent>());
+            boundingBoxes = new List<BoundingBox>(GetComponentsInChildren<BoundingBox>());
             UnityEditor.EditorUtility.SetDirty(gameObject);
         }
 #endif
