@@ -5,18 +5,6 @@ using UnityEngine;
 
 namespace SiegeUp.Core
 {
-    public static class PrefabRefExtentions
-    {
-        public static GameObject GetOriginalObject(this PrefabRef prefabRef)
-        {
-#if UNITY_EDITOR
-            return PrefabManager.instance.GetPrefab(prefabRef);
-#else
-        return ApplicationServices.prefabManager.getPrefab(prefabRef);
-#endif
-        }
-    }
-
     [ExecuteInEditMode, CreateAssetMenu(fileName = "PrefabManager", menuName = "PrefabManager", order = 1)]
     public class PrefabManager : ScriptableObject
     {
@@ -33,15 +21,8 @@ namespace SiegeUp.Core
             prefabMap[prefab.GetComponent<PrefabRef>().GetGuid()] = prefab;
         }
 
-        public List<GameObject> AllPrefabs()
-        {
-            return new List<GameObject>(prefabMap.Values);
-        }
-
-        public IEnumerable<PrefabRef> AllPrefabRefs()
-        {
-            return prefabMap.Values.Select(i => i.GetComponent<PrefabRef>());
-        }
+        public IReadOnlyList<GameObject> AllPrefabs => new List<GameObject>(prefabMap.Values);
+        public IEnumerable<PrefabRef> AllPrefabRefs => prefabMap.Values.Select(i => i.GetComponent<PrefabRef>());
 
         public PrefabRef GetPrefabRef(System.Guid prefabId)
         {

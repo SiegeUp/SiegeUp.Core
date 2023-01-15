@@ -16,7 +16,7 @@ namespace SiegeUp.Core
         List<ScriptableObjectWithId> initialList;
 
         Dictionary<string, ScriptableObjectWithId> scriptableObjectsMap = new();
-        public IReadOnlyList<ScriptableObjectWithId> InitialList => initialList;
+        public IEnumerable<ScriptableObjectWithId> AllScriptableObjects => scriptableObjectsMap.Values;
 
         void OnEnable()
         {
@@ -46,7 +46,7 @@ namespace SiegeUp.Core
             }
         }
 
-        public List<T> GetAllScriptableObjects<T>() where T : ScriptableObjectWithId
+        public IReadOnlyList<T> GetAllScriptableObjects<T>() where T : ScriptableObjectWithId
         {
             return (from pair in scriptableObjectsMap where pair.Value.GetType() == typeof(T) select pair.Value as T).ToList();
         }

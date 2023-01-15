@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace SiegeUp.Core
@@ -78,7 +77,6 @@ namespace SiegeUp.Core
             {
                 uniqueId = Guid.NewGuid().ToString();
                 EditorUtility.SetDirty(this);
-                EditorSceneManager.MarkSceneDirty(gameObject.scene);
             }
 
             if (!allGuids.ContainsKey(uniqueId))

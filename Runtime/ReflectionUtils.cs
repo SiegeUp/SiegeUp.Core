@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 #if UNITY_EDITOR
 #endif
@@ -30,15 +31,11 @@ namespace SiegeUp.Core
 
         static ReflectionUtils()
         {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (assembly.GetName().Name == "Assembly-CSharp")
-                {
-                    mainAssembly = assembly;
-                }
-            }
+            var types = AppDomain.CurrentDomain.GetAssemblies()
+                .Where(i => i.GetName().Name is "SiegeUp" or "SiegeUp.Core")
+                .SelectMany(i => i.GetTypes());
 
-            foreach (var type in mainAssembly.GetTypes())
+            foreach (var type in types)
             {
                 var attributes = type.GetCustomAttributes(typeof(ComponentId), false);
                 if (attributes.Length == 1)

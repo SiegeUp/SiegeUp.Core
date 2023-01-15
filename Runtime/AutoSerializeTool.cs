@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace SiegeUp.Core
 {
@@ -45,9 +46,12 @@ namespace SiegeUp.Core
 
     public abstract class ScriptableObjectWithId : ScriptableObject
     {
-        public abstract string Id { get; }
+        [SerializeField, FormerlySerializedAs("uid")]
+        string id;
 
-        public abstract void ResetId(string id);
+        public string Id => id;
+
+        public void ResetId(string id) => this.id = id;
 
         public void UpdateId()
         {
