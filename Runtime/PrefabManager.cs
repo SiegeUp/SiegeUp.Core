@@ -30,6 +30,7 @@ namespace SiegeUp.Core
             if (!prefabMap.TryGetValue(prefabId, out result))
             {
                 //Debug.Log("Can't find prefab " + prefabId);
+                return null;
             }
 
             return result.GetComponent<PrefabRef>();
