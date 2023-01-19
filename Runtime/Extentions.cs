@@ -31,5 +31,45 @@ namespace SiegeUp.Core
 
             return -1;
         }
+
+        public static Vector2 GetXZ(this Vector3 v3)
+        {
+            return new Vector2(v3.x, v3.z);
+        }
+
+        public static Vector3 GetX0Y(this Vector2 v2)
+        {
+            return new Vector3(v2.x, 0, v2.y);
+        }
+
+        public static Vector2Int Round(this Vector2 v)
+        {
+            return new Vector2Int((int)v.x, (int)v.y);
+        }
+
+        public static Vector3Int Round(this Vector3 v)
+        {
+            return new Vector3Int((int)v.x, (int)v.y, (int)v.z);
+        }
+
+        public static Vector2Int Ceil(this Vector2 v)
+        {
+            return new Vector2Int(Mathf.CeilToInt(v.x), Mathf.CeilToInt(v.y));
+        }
+
+        public static Vector3Int Ceil(this Vector3 v)
+        {
+            return new Vector3Int(Mathf.CeilToInt(v.x), Mathf.CeilToInt(v.y), Mathf.CeilToInt(v.z));
+        }
+
+        public static Vector2Int Floor(this Vector2 v)
+        {
+            return new Vector2Int(Mathf.FloorToInt(v.x), Mathf.FloorToInt(v.y));
+        }
+
+        public static Vector3Int Floor(this Vector3 v)
+        {
+            return new Vector3Int(Mathf.FloorToInt(v.x), Mathf.FloorToInt(v.y), Mathf.FloorToInt(v.z));
+        }
     }
 }

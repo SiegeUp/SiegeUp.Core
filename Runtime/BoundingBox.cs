@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace SiegeUp.Core
 {
@@ -58,6 +59,31 @@ namespace SiegeUp.Core
         {
             return Mathf.Ceil(value / snapStep) * snapStep;
         }
+        
+        public List<Vector2> GetIntersectingPoints(Rect rect, float angle)
+        {
+            var rectCenter = rect.center;
+            var rotQuaternion = Quaternion.Euler(0, 0, angle);
+            var worldPoints = new List<Vector2>();
+
+            float maxSide = Mathf.Max(rect.size.x, rect.size.y);
+            float diagonalSize = Mathf.Sqrt(maxSide * maxSide * 2);
+            var min = rect.center - Vector2.one * diagonalSize;
+            var max = rect.center + Vector2.one * diagonalSize;
+            for (float x = min.x; x <= max.x; x += 1)
+            {
+                for (float y = min.y; y <= max.y; y += 1)
+                {
+                    var point = new Vector2(x, y) - rectCenter;
+                    var worldPoint = (Vector2)(rotQuaternion * point) + rectCenter;
+                    if (rect.Contains(worldPoint))
+                    {
+                        worldPoints.Add(new Vector2(x, y));
+                    }
+                }
+            }
+            return worldPoints;
+        }
 
 #if UNITY_EDITOR
         void LateUpdate()
@@ -91,18 +117,29 @@ namespace SiegeUp.Core
                 for (int j = 0; j < zNum; j++)
                 {
                     var offset = new Vector3(rotatedSnapStep.x * i, 0, rotatedSnapStep.z * j);
-                    var oldColor = Gizmos.color;
-                    Gizmos.color = color;
-                    Gizmos.DrawWireCube(start + offset, new Vector3(rotatedSnapStep.x, 0, rotatedSnapStep.z));
-                    Gizmos.color = oldColor;
+                    DrawRect(color, start + offset, new Vector3(rotatedSnapStep.x, 0, rotatedSnapStep.z));
                 }
             }
+        }
+
+        void DrawRect(Color color, Vector3 point, Vector3 size)
+        {
+            var oldColor = Gizmos.color;
+            Gizmos.color = color;
+            Gizmos.DrawWireCube(point, size);
+            Gizmos.color = oldColor;
         }
 
         void OnDrawGizmos()
         {
             if (transform.parent)
                 DrawWire(transform.parent.position, Color.green, 1);
+            
+            var points = GetIntersectingPoints(new Rect(transform.position.GetXZ() - size.GetXZ() / 2, size.GetXZ()), transform.rotation.eulerAngles.y);
+            foreach (var point in points)
+            {
+                DrawRect(Color.blue, point.GetX0Y(), Vector2.one.GetX0Y());
+            }
         }
 #endif
     }
