@@ -54,6 +54,8 @@ namespace SiegeUp.Core
 
         void OnEnable()
         {
+            Service<PrefabManager>.SetInstanceForEditor(this);
+            
             if (initialPrefabs != null)
                 foreach (var prefab in initialPrefabs)
                 {

@@ -20,6 +20,7 @@ namespace SiegeUp.Core
 
         void OnEnable()
         {
+            Service<ScriptableObjectManager>.SetInstanceForEditor(this);
 #if UNITY_EDITOR
             instance = this;
 #endif
