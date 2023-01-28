@@ -1,19 +1,22 @@
 using UnityEngine;
 
-public static class Service<T>
+namespace SiegeUp.Core
 {
-    public static T Instance { get; private set; }
-
-    public static void SetInstance(T instance)
+    public static class Service<T>
     {
-        Instance = instance;
-    }
+        public static T Instance { get; private set; }
 
-    public static void SetInstanceForEditor(T instance)
-    {
-#if UNITY_EDITOR
-        if (!Application.isPlaying)
+        public static void SetInstance(T instance)
+        {
             Instance = instance;
+        }
+
+        public static void SetInstanceForEditor(T instance)
+        {
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+                Instance = instance;
 #endif
+        }
     }
 }
