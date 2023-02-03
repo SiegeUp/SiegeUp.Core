@@ -9,9 +9,6 @@ namespace SiegeUp.Core
     [ExecuteInEditMode, CreateAssetMenu]
     public class ScriptableObjectManager : ScriptableObject
     {
-#if UNITY_EDITOR
-        static public ScriptableObjectManager instance;
-#endif
         [SerializeField]
         List<ScriptableObjectWithId> initialList;
 
@@ -20,10 +17,6 @@ namespace SiegeUp.Core
 
         void OnEnable()
         {
-            Service<ScriptableObjectManager>.SetInstanceForEditor(this);
-#if UNITY_EDITOR
-            instance = this;
-#endif
             UpdateMap();
         }
 
@@ -53,7 +46,6 @@ namespace SiegeUp.Core
         }
 
 #if UNITY_EDITOR
-
         List<T> FindAllScriptableObjects<T>() where T : ScriptableObject
         {
             var resources = Resources.FindObjectsOfTypeAll<T>();

@@ -64,10 +64,8 @@ namespace SiegeUp.Core
                             var realMethod = Array.Find(methods, i => i.Name == method.Name && i.GetCustomAttributes(typeof(MethodId), false).Length == 0);
                             var methodId = methodIds[0] as MethodId;
 #if UNITY_EDITOR
-                            if (realMethod != null)
-                                Debug.Log($"Method: {method.Name} [{methodId.Id}] => {realMethod.Name} ({realMethod.GetParameters().Length})");
-                            else
-                                Debug.LogError($"Method not found: {method.Name} [{methodId.Id}]");
+                            if (realMethod == null)
+                                Debug.LogError($"Method not found: {method.Name} [{methodId.Id}]. Make sure, that method has correct name, attriputes and parameters.");
 #endif
                             methodMap.methods[methodId.Id] = new Method
                             {

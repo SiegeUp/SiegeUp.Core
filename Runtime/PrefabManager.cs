@@ -8,9 +8,6 @@ namespace SiegeUp.Core
     [ExecuteInEditMode, CreateAssetMenu(fileName = "PrefabManager", menuName = "PrefabManager", order = 1)]
     public class PrefabManager : ScriptableObject
     {
-#if UNITY_EDITOR
-        static public PrefabManager instance;
-#endif
         [SerializeField]
         List<GameObject> initialPrefabs;
 
@@ -54,17 +51,12 @@ namespace SiegeUp.Core
 
         void OnEnable()
         {
-            Service<PrefabManager>.SetInstanceForEditor(this);
-            
             if (initialPrefabs != null)
                 foreach (var prefab in initialPrefabs)
                 {
                     if (prefab)
                         AddPrefab(prefab);
                 }
-#if UNITY_EDITOR
-            instance = this;
-#endif
         }
 
 #if UNITY_EDITOR

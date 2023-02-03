@@ -32,6 +32,11 @@ namespace SiegeUp.Core
             return -1;
         }
 
+        public static T Verify<T>(this T unityObject) where T : UnityEngine.Object
+        {
+            return unityObject ? unityObject : null;
+        }
+
         public static Vector2 GetXZ(this Vector3 v3)
         {
             return new Vector2(v3.x, v3.z);
