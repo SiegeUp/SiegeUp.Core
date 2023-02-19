@@ -30,7 +30,7 @@ namespace SiegeUp.Core
                 return null;
             }
 
-            return result.GetComponent<PrefabRef>();
+            return result.Verify()?.GetComponent<PrefabRef>();
         }
 
         public GameObject GetPrefab(System.Guid prefabId)
