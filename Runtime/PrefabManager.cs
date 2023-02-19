@@ -18,8 +18,8 @@ namespace SiegeUp.Core
             prefabMap[prefab.GetComponent<PrefabRef>().GetGuid()] = prefab;
         }
 
-        public IReadOnlyList<GameObject> AllPrefabs => new List<GameObject>(prefabMap.Values);
-        public IEnumerable<PrefabRef> AllPrefabRefs => prefabMap.Values.Select(i => i.GetComponent<PrefabRef>());
+        public IEnumerable<GameObject> AllPrefabs => prefabMap.Values.Where(i => i);
+        public IEnumerable<PrefabRef> AllPrefabRefs => AllPrefabs.Select(i => i.GetComponent<PrefabRef>());
 
         public PrefabRef GetPrefabRef(System.Guid prefabId)
         {
