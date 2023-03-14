@@ -31,8 +31,8 @@ namespace SiegeUp.Core
 
             return -1;
         }
-
-        public static T Verify<T>(this T unityObject) where T : UnityEngine.Object
+        
+        public static T NullCheck<T>(this T unityObject) where T : UnityEngine.Object
         {
             return unityObject ? unityObject : null;
         }

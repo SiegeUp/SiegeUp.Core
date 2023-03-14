@@ -420,7 +420,6 @@ namespace SiegeUp.Core
                 int lengthPos = pos;
                 pos += sizeof(int);
                 int strLength = BinaryUtil.WriteString(ref dest, pos, str);
-                ;
                 pos += strLength;
                 BinaryUtil.WriteInt32(ref dest, lengthPos, strLength);
             }
