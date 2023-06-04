@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace SiegeUp.Core
 {
-    [ExecuteInEditMode, CreateAssetMenu(fileName = "PrefabManager", menuName = "PrefabManager", order = 1)]
+    [ExecuteInEditMode, CreateAssetMenu(menuName = "SiegeUp.Core/PrefabManager", fileName = "PrefabManager", order = 1)]
     public class PrefabManager : ScriptableObject
     {
         [SerializeField]

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace SiegeUp.Core
 {
-    [ExecuteInEditMode, CreateAssetMenu]
+    [ExecuteInEditMode, CreateAssetMenu(menuName = "SiegeUp.Core/ScriptableObjectManager")]
     public class ScriptableObjectManager : ScriptableObject
     {
         [SerializeField]
