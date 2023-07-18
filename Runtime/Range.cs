@@ -91,7 +91,8 @@ namespace SiegeUp.Core
             var building = obj.GetComponent<BoxCollider>();
             if (building)
             {
-                var boundingBox = gameObject.GetComponent<BoundingBoxList>() is {} list ? list.MainBound : null;
+                var boundingBoxList = obj.GetComponent<BoundingBoxList>();
+                var boundingBox = boundingBoxList ? boundingBoxList.MainBound : null;   
                 if (boundingBox != null)
                 {
                     var objPos = obj.transform.position;
