@@ -167,65 +167,6 @@ namespace SiegeUp.Core
             public Vector3 size;
         }
 
-        struct TestSubStruct
-        {
-            [AutoSerialize(0)]
-            public int fieldInt;
-        }
-
-        class TestSubClass
-        {
-            [AutoSerialize(0)]
-            public int fieldInt;
-        }
-
-        class TestStruct
-        {
-            [AutoSerialize(0)]
-            public int fieldInt;
-
-            [AutoSerialize(1)]
-            public string fieldString;
-
-            [AutoSerialize(2)]
-            public TestSubStruct subStruct;
-
-            [AutoSerialize(3)]
-            public List<string> listOfStrs;
-
-            [AutoSerialize(4)]
-            public List<int> listOfInts;
-
-            [AutoSerialize(5)]
-            public List<TestSubStruct> listOfTestSubStruct;
-
-            [AutoSerialize(6)]
-            public float fieldFloat;
-
-            [AutoSerialize(7)]
-            public bool fieldBool;
-
-            [AutoSerialize(8)]
-            public short fieldShort;
-
-            [AutoSerialize(9)]
-            public byte[] fieldByteArray;
-
-            [AutoSerialize(10)]
-            public byte fieldByte;
-
-            [AutoSerialize(11)]
-            public TestSubClass testSubClass;
-
-            [AutoSerialize(12)]
-            public TestSubClass testSubClassNull;
-
-            [AutoSerialize(13)]
-            public string testRuStr;
-
-            [AutoSerialize(14)]
-            public int num;
-        }
 
         public const int currentFormatVersion = 3;
 
@@ -758,55 +699,5 @@ namespace SiegeUp.Core
                 }
             }
         }
-
-#if UNITY_EDITOR
-        [MenuItem("Tests/Auto Serialize")]
-        public static void TestAutoSerialize()
-        {
-            var testObj = new TestStruct
-            {
-                fieldInt = 100,
-                fieldString = "200",
-                subStruct = new TestSubStruct
-                {
-                    fieldInt = 300
-                },
-                listOfStrs = new List<string> { "A", "B", null, "D", null, "F" },
-                listOfInts = new List<int> { 1, 2, 3, 4, 5 },
-                listOfTestSubStruct = new List<TestSubStruct> { new() { fieldInt = 1 }, new() { fieldInt = 2 }, new() { fieldInt = 3 } },
-                fieldFloat = 10.010f,
-                fieldBool = true,
-                fieldShort = 1000,
-                fieldByte = 10,
-                fieldByteArray = new byte[] { 1, 2, 3, 4 },
-                testSubClass = new TestSubClass { fieldInt = 400 },
-                testSubClassNull = null,
-                testRuStr = "Тест",
-                num = 10
-            };
-
-            var bytes = new byte[1024];
-            int serializePos = 0;
-            WriteObject(ref bytes, ref serializePos, testObj);
-            Array.Resize(ref bytes, serializePos + 1);
-
-            Debug.Log(BitConverter.ToString(bytes).Replace("-", ""));
-
-            var newTestObj = new TestStruct();
-
-            int deserializePos = 0;
-            var objContext = new ObjectContext(null, null, currentFormatVersion, null, newTestObj, "Test", typeof(TestStruct));
-            ReadObject(ref bytes, ref deserializePos, objContext);
-
-            Debug.Assert(newTestObj.fieldInt == testObj.fieldInt);
-            Debug.Assert(newTestObj.fieldString == testObj.fieldString);
-            Debug.Assert(newTestObj.subStruct.fieldInt == testObj.subStruct.fieldInt);
-            Debug.Assert(newTestObj.listOfStrs.Count == testObj.listOfStrs.Count);
-            Debug.Assert(newTestObj.listOfInts.Count == testObj.listOfInts.Count);
-            Debug.Assert(newTestObj.listOfTestSubStruct.Count == testObj.listOfTestSubStruct.Count);
-            Debug.Assert(newTestObj.testRuStr == testObj.testRuStr);
-            Debug.Assert(newTestObj.num == testObj.num);
-        }
-#endif
     }
 }
