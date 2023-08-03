@@ -8,6 +8,8 @@ using UnityEngine.Serialization;
 
 namespace SiegeUp.Core
 {
+
+
     [AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false)]
     public class ComponentId : Attribute
     {
@@ -171,6 +173,12 @@ namespace SiegeUp.Core
         public const int currentFormatVersion = 3;
 
         static Dictionary<string, ClassReflectionCache> classReflectionCaches = new();
+        static Dictionary<string, bool> hasAutoSerializeAttributeMap = new();
+        static Dictionary<string, Type> cachedTypesMap = new();
+        static Dictionary<string, Type> nestedTypesMapLegacy = new();
+        static Dictionary<string, Type> nestedTypesMap = new();
+
+
 
         public static string ExtractId(GameObject targetObject)
         {
@@ -698,6 +706,462 @@ namespace SiegeUp.Core
                     field.fieldInfo.SetValue(context.obj, value);
                 }
             }
+        }
+
+
+
+
+
+
+
+        public static SerializedGameObjectBin SerializeBin(GameObject targetObject)
+        {
+            var serializedGameObject = new SerializedGameObjectBin();
+            serializedGameObject.id = targetObject.GetComponent<UniqueId>().GetGuid();
+            var prefabRef = targetObject.GetComponent<PrefabRef>();
+            if (prefabRef != null)
+            {
+                serializedGameObject.prefabRef = Service<PrefabManager>.Instance.GetPrefab(prefabRef).GetComponent<PrefabRef>();
+                serializedGameObject.name = null;
+            }
+            else
+            {
+                serializedGameObject.name = targetObject.name;
+            }
+
+            serializedGameObject.position = targetObject.transform.position;
+            serializedGameObject.rotation = targetObject.transform.rotation;
+
+            SerializeComponentsBin(serializedGameObject, targetObject, serializedGameObject.prefabRef);
+
+            return serializedGameObject;
+        }
+
+        static bool HasAutoSerializeAttribute(Type type)
+        {
+            bool result = false;
+            if (!hasAutoSerializeAttributeMap.TryGetValue(type.FullName, out result))
+            {
+                result = System.Array.Find(type.GetCustomAttributes(true), item => item.GetType() == typeof(AutoSerializeAttribute)) != null;
+                hasAutoSerializeAttributeMap.Add(type.FullName, result);
+            }
+
+            return result;
+        }
+
+
+        public static bool IsSerializableComponent(Type componentType)
+        {
+            return !(typeof(Transform).IsAssignableFrom(componentType)) && ReflectionUtils.GetComponentId(componentType) != -1;
+        }
+
+        static void SerializeComponentsBin(SerializedGameObjectBin serializedGameObject, GameObject targetObject, PrefabRef prefab)
+        {
+            serializedGameObject.serializedComponents = new List<SerializedComponentBin>();
+            var prefabComponents = prefab ? prefab.GetComponents<Component>() : null;
+            var components = targetObject.GetComponents<Component>();
+            if (prefabComponents != null && components.Length != prefabComponents.Length)
+                prefabComponents = null;
+            for (int i = 0; i < components.Length; i++)
+            {
+                var component = components[i];
+                if (component == null)
+                    continue;
+
+                var componentType = component.GetType();
+
+                if (componentType == typeof(Transform))
+                    continue;
+
+                int componentId = ReflectionUtils.GetComponentId(component.GetType());
+
+                if (componentId == -1)
+                    continue;
+
+                object baseComponent = null;
+                if (prefabComponents != null)
+                {
+                    baseComponent = prefabComponents[i];
+                    if (baseComponent.GetType() != component.GetType())
+                        baseComponent = null;
+                }
+
+                var serializedComponent = new SerializedComponentBin {
+                    id = componentId,
+                    autoSerialize = new AutoSerializedObjectBin { fields = AutoSerializeTool.SerializeObjectFields(component, baseComponent) }
+                };
+
+                object serializedStruct = SerializeComponent(componentType, component);
+                if (serializedStruct != null)
+                {
+                    var bytes = AutoSerializeTool.Serialize(serializedStruct, serializedStruct.GetType());
+                    serializedComponent.data = bytes;
+                }
+
+                if (serializedComponent.data != null
+                    || serializedComponent.autoSerialize.fields.Count > 0
+                    || HasAutoSerializeAttribute(componentType))
+                {
+                    serializedGameObject.serializedComponents.Add(serializedComponent);
+                }
+            }
+        }
+
+        static Type GetTypeCached(string name)
+        {
+            Type result;
+            if (!cachedTypesMap.TryGetValue(name, out result))
+            {
+                result = System.Type.GetType(name);
+                cachedTypesMap.Add(name, result);
+            }
+
+            return result;
+        }
+
+
+        static Type GetNestedType(Type type, string nestedName)
+        {
+            var currentType = type;
+            do
+            {
+                var dataStructType = currentType.GetNestedType(nestedName);
+                if (dataStructType != null)
+                    return dataStructType;
+                currentType = currentType.BaseType;
+            } while (currentType != null);
+
+            return null;
+        }
+
+        static Type GetNestedTypeCachedLegacy(Type componentType)
+        {
+            var name = componentType.FullName;
+            Type result;
+            if (!nestedTypesMapLegacy.TryGetValue(name, out result))
+            {
+                result = GetNestedType(componentType, "Legacy_DATA");
+                nestedTypesMapLegacy.Add(name, result);
+            }
+
+            return result;
+        }
+
+        static Type GetNestedTypeCached(Type componentType)
+        {
+            var name = componentType.FullName;
+            Type result;
+            if (!nestedTypesMap.TryGetValue(name, out result))
+            {
+                result = GetNestedType(componentType, "DATA");
+                nestedTypesMap.Add(name, result);
+            }
+
+            return result;
+        }
+
+        static object SerializeComponent(Type componentType, Component component)
+        {
+            object serializedStruct = null;
+            var serializeClass = GetTypeCached("DATA_" + componentType.Name);
+            if (serializeClass != null)
+            {
+                var serializeMethod = serializeClass.GetMethod("DATA_Serialize");
+                serializedStruct = serializeMethod.Invoke(null, new object[] { component });
+            }
+            else
+            {
+                var dataStructType = GetNestedTypeCached(componentType);
+                if (dataStructType != null)
+                {
+                    var serializeMethod = ReflectionUtils.GetMethod(componentType, "DATA_Serialize");
+
+                    if (serializeMethod != null)
+                    {
+                        try
+                        {
+                            serializedStruct = serializeMethod.Invoke(component, null);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogError("Can't serialize component " + component.GetType().Name);
+                            Debug.LogException(e);
+                        }
+                    }
+                }
+            }
+
+            return serializedStruct;
+        }
+
+
+        public static List<SerializedGameObjectBin> SerializeGameObjects(UniqueId[] uniqueIds)
+        {
+            var elements = new List<SerializedGameObjectBin>();
+            foreach (var uniqueId in uniqueIds)
+            {
+                if (uniqueId.transform.parent == null || uniqueId.transform.parent.name != "SceneModels")
+                    elements.Add(SerializeBin(uniqueId.gameObject));
+            }
+
+            return elements;
+        }
+
+        static void DeserializeComponentBin(byte[] data, Component component, Type componentType, RestoreProcess restoreProcess)
+        {
+            try
+            {
+                var deserializeClass = GetTypeCached("DATA_" + componentType.Name);
+                if (deserializeClass != null)
+                {
+                    var dataStructType = deserializeClass.GetNestedType("DATA");
+                    var deserializeMethod = deserializeClass.GetMethod("DATA_Deserialize");
+                    var context = new ObjectContext(Service<PrefabManager>.Instance,
+                        Service<ScriptableObjectManager>.Instance,
+                        restoreProcess.formatVersion,
+                        id => FindObjectById(id, restoreProcess),
+                        component,
+                        component.gameObject.name,
+                        null);
+                    var deserialized = AutoSerializeTool.Deserialize(data, dataStructType, context);
+                    deserializeMethod.Invoke(null, new[] { component, deserialized, restoreProcess });
+                }
+                else
+                {
+                    var dataStructType = GetNestedTypeCached(componentType);
+                    if (dataStructType != null)
+                    {
+                        var context = new ObjectContext(Service<PrefabManager>.Instance,
+                            Service<ScriptableObjectManager>.Instance,
+                            restoreProcess.formatVersion,
+                            id => FindObjectById(id, restoreProcess),
+                            component,
+                            component.gameObject.name,
+                            null);
+                        var deserialized = AutoSerializeTool.Deserialize(data, dataStructType, context);
+                        if (dataStructType != null)
+                        {
+                            var deserializeMethod = ReflectionUtils.GetMethod(componentType, "DATA_Deserialize");
+                            deserializeMethod.Invoke(component, new[] { deserialized, restoreProcess });
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Can't deserialize component " + componentType.Name);
+                Debug.LogException(e);
+            }
+        }
+
+        public static void DeserializeComponentsBin(SerializedGameObjectBin element, GameObject targetObject, RestoreProcess restoreProcess)
+        {
+            var targetObjectPos = element.position;
+            if (restoreProcess.version == 0)
+            {
+                targetObjectPos += new Vector3(50, 0, 50);
+            }
+
+            targetObject.transform.position = targetObjectPos;
+            targetObject.transform.rotation = element.rotation;
+            var deserializedComponents = targetObject.GetComponents<Component>();
+            var components = new List<Component>(deserializedComponents);
+            foreach (var serializedComponent in element.serializedComponents)
+            {
+                Component componentToDelete = null;
+                foreach (var component in components)
+                {
+                    if (component == null)
+                        continue;
+                    var componentType = component.GetType();
+                    int componentId = ReflectionUtils.GetComponentId(componentType);
+                    if (componentId != -1 && serializedComponent.id == componentId)
+                    {
+                        var context = new ObjectContext(
+                            Service<PrefabManager>.Instance,
+                            Service<ScriptableObjectManager>.Instance,
+                            restoreProcess.formatVersion,
+                            id => FindObjectById(id, restoreProcess),
+                            component,
+                            component.gameObject.name,
+                            componentType);
+
+                        if (serializedComponent.data != null)
+                        {
+                            DeserializeComponentBin(serializedComponent.data, component, componentType, restoreProcess);
+                        }
+
+                        AutoSerializeTool.DeserializeObjectFields(serializedComponent.autoSerialize.fields, context);
+
+                        componentToDelete = component;
+                        break;
+                    }
+                }
+
+                if (componentToDelete != null) // We remove processed component from list to allow multiple components deserialization
+                    components.Remove(componentToDelete);
+            }
+
+            foreach (var component in deserializedComponents)
+            {
+                if (component)
+                {
+                    var componentType = component.GetType();
+
+                    var onDeserializedMethod = ReflectionUtils.GetMethod(componentType, "OnDeserialized");
+                    if (onDeserializedMethod != null)
+                    {
+                        try
+                        {
+                            onDeserializedMethod.Invoke(component, new object[] { restoreProcess });
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogException(e);
+                        }
+                    }
+                }
+            }
+        }
+
+        public static GameObject CreateObjectBin(SerializedGameObjectBin element, RestoreProcess restoreProcess)
+        {
+            var targetObjectPos = element.position;
+            if (restoreProcess.version == 0)
+            {
+                targetObjectPos += new Vector3(50, 0, 50);
+            }
+
+            GameObject prefab = null;
+            if (element.prefabRef != null)
+                prefab = Service<PrefabManager>.Instance.GetPrefab(element.prefabRef);
+            if (prefab != null && restoreProcess.bounds != default && !restoreProcess.bounds.Contains(targetObjectPos))
+            {
+                Debug.LogError($"Object is out of world bounds {restoreProcess.bounds}. Discard. Obj: {element.name} Pos: {targetObjectPos}");
+                return null;
+            }
+
+            if (restoreProcess.ignoredComponentTypes != null)
+            {
+                foreach (var ignoredComponentType in restoreProcess.ignoredComponentTypes)
+                {
+                    if (element.HasComponent(ignoredComponentType))
+                        return null;
+                }
+            }
+
+            if (element.name == null && prefab == null)
+            {
+                // This is not a trigger-like object because it has no name. At same time, it has no assigned prefab. This means, the prefab is not existant.
+                return null;
+            }
+
+            GameObject targetObject = null;
+            if (prefab == null)
+            {
+                targetObject = new GameObject();
+                targetObject.transform.SetParent(restoreProcess.parent, false);
+                targetObject.transform.position = targetObjectPos;
+                targetObject.transform.rotation = element.rotation;
+                targetObject.name = element.name.Replace("(Clone)", "");
+                var newUniqueId = targetObject.AddComponent<UniqueId>();
+                newUniqueId.ResetId(element.id);
+
+                foreach (var serializedComponent in element.serializedComponents)
+                {
+                    var componentType = ReflectionUtils.GetComponentById(serializedComponent.id);
+                    if (componentType != null)
+                    {
+                        targetObject.AddComponent(componentType);
+                    }
+                    else
+                    {
+                        Debug.LogError("Can't create component because type can't be found " + serializedComponent.id);
+                    }
+                }
+            }
+            else
+            {
+                targetObject = restoreProcess.spawn(prefab, targetObjectPos, element.rotation, element.id);
+                targetObject.name = prefab.name;
+            }
+
+            if (targetObject == null)
+                return null;
+
+            var uniqueId = targetObject.GetComponent<UniqueId>();
+            try
+            {
+                restoreProcess.uniqueIdsOnScene[element.id] = uniqueId;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+
+            uniqueId.ResetId(element.id);
+
+            return targetObject;
+        }
+
+        public static List<GameObject> RestoreObjects(RestoreProcess restoreProcess)
+        {
+            var createdObjects = new List<GameObject>();
+
+            foreach (var serializedGameObjectPair in restoreProcess.serializedGameObjectsBin)
+            {
+                var targetObject = FindObjectById(serializedGameObjectPair.Value.id, restoreProcess);
+
+                if (targetObject == null)
+                {
+                    targetObject = CreateObjectBin(serializedGameObjectPair.Value, restoreProcess);
+                    if (targetObject == null)
+                        continue;
+                }
+
+                if (serializedGameObjectPair.Value.serializedComponents != null)
+                    DeserializeComponentsBin(serializedGameObjectPair.Value, targetObject, restoreProcess);
+                createdObjects.Add(targetObject);
+            }
+
+            return createdObjects;
+        }
+
+        public static void RestoreScene(RestoreProcess restoreProcess)
+        {
+            RestoreObjects(restoreProcess);
+
+            foreach (var uniqueId in restoreProcess.uniqueIdsOnScene)
+            {
+                bool noAmongSerializedBin = restoreProcess.serializedGameObjectsBin == null || !restoreProcess.serializedGameObjectsBin.ContainsKey(uniqueId.Key);
+
+                if (uniqueId.Value.transform.parent != null && uniqueId.Value.transform.parent == restoreProcess.parent && noAmongSerializedBin)
+                    restoreProcess.destroy(uniqueId.Value.gameObject);
+            }
+        }
+
+        public static GameObject FindObjectByIdDefault(Guid id, RestoreProcess restoreProcess)
+        {
+            UniqueId onSceneObject;
+            if (restoreProcess.uniqueIdsOnScene != null && restoreProcess.uniqueIdsOnScene.TryGetValue(id, out onSceneObject))
+                return onSceneObject ? onSceneObject.gameObject : null;
+            SerializedGameObjectBin serializedObjectBin;
+            if (restoreProcess.serializedGameObjectsBin != null && restoreProcess.serializedGameObjectsBin.TryGetValue(id, out serializedObjectBin))
+                return CreateObjectBin(serializedObjectBin, restoreProcess);
+            Debug.LogError($"Can't find or instantiate object {id}");
+            return null;
+        }
+
+        public static GameObject FindObjectById(Guid id, RestoreProcess restoreProcess)
+        {
+            if (restoreProcess.findObjectById != null)
+            {
+                var foundObj = restoreProcess.findObjectById(id);
+                if (foundObj != null)
+                    return foundObj;
+            }
+
+            return FindObjectByIdDefault(id, restoreProcess);
         }
     }
 }
