@@ -935,10 +935,6 @@ namespace SiegeUp.Core
             var elements = new List<SerializedGameObjectBin>();
             foreach (var uniqueId in uniqueIds)
             {
-                if (uniqueId.GetGuid().Equals(Guid.Empty))
-                {
-                    Debug.Log("Empty");
-                }
                 if (uniqueId.transform.parent == null || uniqueId.transform.parent.name != "SceneModels")
                     elements.Add(SerializeBin(uniqueId.gameObject));
             }
