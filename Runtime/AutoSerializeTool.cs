@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using System.Xml;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Serialization;
+using static SiegeUp.Core.AutoSerializeTool.ClassReflectionCache;
 
 namespace SiegeUp.Core
 {
@@ -228,7 +231,7 @@ namespace SiegeUp.Core
                 return cache;
             }
 
-            var fieldsToSerialize = new List<FieldInfo>(type.GetRuntimeFields());
+            var fieldsToSerialize = GetListOfFields(type);
             fieldsToSerialize.RemoveAll(item => item.GetCustomAttribute<AutoSerializeAttribute>() == null);
             var fields = fieldsToSerialize.ConvertAll(item => new ClassReflectionCache.FieldCache
             {
@@ -236,9 +239,41 @@ namespace SiegeUp.Core
                 fieldInfo = item,
                 alwaysSerialize = item.GetCustomAttribute<AlwaysSerializeAttribute>() != null
             });
+
+            if (HasDuplicateIds(fields, type))
+                return null;
+
             cache = new ClassReflectionCache { fields = fields };
             classReflectionCaches.Add(type.FullName, cache);
             return cache;
+        }
+
+        public static bool HasDuplicateIds(List<FieldCache> fields, Type type)
+        {
+            var duplicateIds = fields
+                .GroupBy(field => field.id)
+                .Where(group => group.Count() > 1)
+                .ToList();
+
+            bool hasDuplicatedIds = false;
+            foreach (var group in duplicateIds)
+            {
+                hasDuplicatedIds = true;
+                Debug.LogError($"Error: Duplicate id {group.Key} found for fields: {string.Join(", ", group.Select(field => field.fieldInfo.Name))} in type {type.Name}");
+            }
+            return hasDuplicatedIds;
+        }
+
+        public static List<FieldInfo> GetListOfFields(Type type)
+        {
+            var fieldsToSerialize = new List<FieldInfo>(type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+            var currentType = type;
+            while (currentType.BaseType != null)
+            {
+                fieldsToSerialize.AddRange(currentType.BaseType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+                currentType = currentType.BaseType;
+            }
+            return fieldsToSerialize;
         }
 
         public static int ReadFileHeader(byte[] bytes, ref int pos, string expectedMagic)
@@ -900,6 +935,10 @@ namespace SiegeUp.Core
             var elements = new List<SerializedGameObjectBin>();
             foreach (var uniqueId in uniqueIds)
             {
+                if (uniqueId.GetGuid().Equals(Guid.Empty))
+                {
+                    Debug.Log("Empty");
+                }
                 if (uniqueId.transform.parent == null || uniqueId.transform.parent.name != "SceneModels")
                     elements.Add(SerializeBin(uniqueId.gameObject));
             }
@@ -1160,7 +1199,6 @@ namespace SiegeUp.Core
                 if (foundObj != null)
                     return foundObj;
             }
-
             return FindObjectByIdDefault(id, restoreProcess);
         }
     }
