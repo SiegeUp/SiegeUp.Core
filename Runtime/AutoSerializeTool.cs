@@ -266,11 +266,11 @@ namespace SiegeUp.Core
 
         public static List<FieldInfo> GetListOfFields(Type type)
         {
-            var fieldsToSerialize = new List<FieldInfo>(type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+            var fieldsToSerialize = new List<FieldInfo>(type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
             var currentType = type;
             while (currentType.BaseType != null)
             {
-                fieldsToSerialize.AddRange(currentType.BaseType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+                fieldsToSerialize.AddRange(currentType.BaseType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
                 currentType = currentType.BaseType;
             }
             return fieldsToSerialize;
