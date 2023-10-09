@@ -37,6 +37,11 @@ namespace SiegeUp.Core
             return unityObject ? unityObject : null;
         }
 
+        public static GameObject GetOriginalObject(this PrefabRef prefabRef)
+        {
+            return Service<PrefabManager>.Instance.GetPrefab(prefabRef);
+        }
+
         public static Vector2 GetXZ(this Vector3 v3)
         {
             return new Vector2(v3.x, v3.z);
