@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using UnityEngine;
 
 namespace SiegeUp.Core
 {
+    [DebuggerStepThrough]
     public static class Service<T> where T : Object
     {
         public static T Instance { get; private set; }
