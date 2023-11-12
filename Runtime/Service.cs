@@ -6,7 +6,8 @@ namespace SiegeUp.Core
     [DebuggerStepThrough]
     public static class Service<T> where T : Object
     {
-        public static T Instance { get; private set; }
+        static T instance;
+        public static T Instance { get => instance.NullCheck(); private set => instance = value; }
 
         public static void RegisterInstance(T instance)
         {
