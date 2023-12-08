@@ -60,25 +60,29 @@ namespace SiegeUp.Core
             return Mathf.Ceil(value / snapStep) * snapStep;
         }
         
-        public List<Vector2> GetIntersectingPoints(Rect rect, float angle)
+        public List<Vector2> GetIntersectingPoints2(Rect rect, float angle)
         {
-            var rectCenter = rect.center;
+            Vector2[] directions = new[] { new Vector2(1, 1), new Vector2(1, -1), new Vector2(-1, -1), new Vector2(-1, 1) };
             var rotQuaternion = Quaternion.Euler(0, 0, angle);
             var worldPoints = new List<Vector2>();
 
+            float offsetX = Mathf.Ceil(rect.size.x) % 2 == 0 ? 0.5f : 0;
+            float offsetY = Mathf.Ceil(rect.size.y) % 2 == 0 ? 0.5f : 0;
+            var offset = new Vector2(offsetX, offsetY);
+
             float maxSide = Mathf.Max(rect.size.x, rect.size.y);
-            float diagonalSize = Mathf.Sqrt(maxSide * maxSide * 2);
-            var min = rect.center - Vector2.one * diagonalSize;
-            var max = rect.center + Vector2.one * diagonalSize;
-            for (float x = min.x; x <= max.x; x += 1)
+            float diagonalSize = Mathf.Ceil(Mathf.Sqrt(maxSide * maxSide * 2));
+            for (float x = 0; x <= diagonalSize; x += 1)
             {
-                for (float y = min.y; y <= max.y; y += 1)
+                for (float y = 0; y <= diagonalSize; y += 1)
                 {
-                    var point = new Vector2(x, y) - rectCenter;
-                    var worldPoint = (Vector2)(rotQuaternion * point) + rectCenter;
-                    if (rect.Contains(worldPoint))
+                    foreach (var direction in directions)
                     {
-                        worldPoints.Add(new Vector2(x, y));
+                        var point = new Vector2(x * direction.x, y * direction.y);
+                        var worldPoint = rect.center + (Vector2)(rotQuaternion * point) + offset;
+
+                        if (rect.Contains(worldPoint))
+                            worldPoints.Add(point + rect.center + (Vector2)(Quaternion.Euler(0, 0, -angle) * offset));
                     }
                 }
             }
@@ -132,10 +136,10 @@ namespace SiegeUp.Core
 
         void OnDrawGizmos()
         {
-            if (transform.parent)
-                DrawWire(transform.parent.position, Color.green, 1);
+            //if (transform.parent)
+            //    DrawWire(transform.parent.position, Color.green, 1);
             
-            var points = GetIntersectingPoints(new Rect(transform.position.GetXZ() - size.GetXZ() / 2, size.GetXZ()), transform.rotation.eulerAngles.y);
+            var points = GetIntersectingPoints2(new Rect(transform.position.GetXZ() - size.GetXZ() / 2, size.GetXZ()), transform.rotation.eulerAngles.y);
             foreach (var point in points)
             {
                 DrawRect(Color.blue, point.GetX0Y(), Vector2.one.GetX0Y());
