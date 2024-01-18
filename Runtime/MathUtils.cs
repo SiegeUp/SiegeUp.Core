@@ -6,6 +6,15 @@ namespace SiegeUp.Core
 {
     public static class MathUtils
     {
+        public enum CompareOperation
+        {
+            More = 1,
+            MoreOrEqual = 2,
+            Less = 3,
+            LessOrEqual = 4,
+            Equal = 5,
+            NotEqual = 6
+        }
 
         public static byte[] GetHash(byte[] bytes)
         {
@@ -169,6 +178,28 @@ namespace SiegeUp.Core
             } // IX
 
             return 0f;
+        }
+
+        public static bool Compare(CompareOperation operation, float current, float target)
+        {
+            if (operation == CompareOperation.More && current > target)
+                return true;
+            if (operation == CompareOperation.MoreOrEqual && current >= target)
+                return true;
+            if (operation == CompareOperation.Less && current < target)
+                return true;
+            if (operation == CompareOperation.LessOrEqual && current <= target)
+                return true;
+            if (operation == CompareOperation.Equal && current == target)
+                return true;
+            if (operation == CompareOperation.NotEqual && current != target)
+                return true;
+            return false;
+        }
+
+        public static bool IsInfinity(Vector3 pos)
+        {
+            return float.IsInfinity(pos.x) || float.IsInfinity(pos.y) || float.IsInfinity(pos.z);
         }
     }
 }
