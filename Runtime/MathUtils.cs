@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
 
@@ -63,6 +63,27 @@ namespace SiegeUp.Core
             var squareDist = diff.x * diff.x + diff.z * diff.z;
             float rangeVal = range;
             return squareDist < rangeVal * rangeVal;
+        }
+
+        public static bool IsPointInCylinderSector(Vector3 point, Vector3 center, float radius, float height, float sectorAngle)
+        {
+            // Перемещение точки и центра цилиндра так, чтобы центр цилиндра оказался в начале координат
+            Vector3 relativePoint = point - center;
+
+            // Проверка высоты
+            if (relativePoint.y < 0 || relativePoint.y > height)
+                return false;
+
+            // Проверка радиуса
+            float distanceSquared = relativePoint.x * relativePoint.x + relativePoint.z * relativePoint.z;
+            if (distanceSquared > radius * radius)
+                return false;
+
+            // Проверка угла сектора
+            float angle = Mathf.Atan2(relativePoint.z, relativePoint.x) * Mathf.Rad2Deg;
+            if (angle < 0) angle += 360;
+
+            return angle <= sectorAngle;
         }
 
         public static bool IsRectInRange3D(Vector3 corner, Vector3 size, Vector3 pos, float range)
