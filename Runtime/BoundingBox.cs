@@ -8,12 +8,8 @@ namespace SiegeUp.Core
     public class BoundingBox : MonoBehaviour
     {
         [SerializeField]
-        bool passable = false;
-
-        [SerializeField]
         Vector3 size = Vector3.one;
 
-        public bool Passable => passable;
         public Vector3 Size { get => size; set => size = value; }
 
         public Vector3 SizeSnapped(float snapStep)
@@ -21,6 +17,11 @@ namespace SiegeUp.Core
             var tmpRawSize = RawSize();
             var actualSize = new Vector3(SnapValue(tmpRawSize.x, snapStep), 0, SnapValue(tmpRawSize.z, snapStep));
             return actualSize;
+        }
+
+        public Rect GetLocalRect()
+        {
+            return new Rect(transform.localPosition.GetXZ() - Size.GetXZ() / 2, Size.GetXZ());
         }
 
         public Rect GetRect(Quaternion rotation)

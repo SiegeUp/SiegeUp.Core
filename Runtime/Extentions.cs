@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -48,6 +48,11 @@ namespace SiegeUp.Core
         }
 
         public static Vector3 GetX0Y(this Vector2 v2)
+        {
+            return new Vector3(v2.x, 0, v2.y);
+        }
+
+        public static Vector3 GetX0Y(this Vector2Int v2)
         {
             return new Vector3(v2.x, 0, v2.y);
         }

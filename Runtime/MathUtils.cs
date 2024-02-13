@@ -2,6 +2,8 @@
 using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
+using System.Linq;
+using System;
 
 namespace SiegeUp.Core
 {
@@ -245,6 +247,36 @@ namespace SiegeUp.Core
         public static bool IsInfinity(Vector3 pos)
         {
             return float.IsInfinity(pos.x) || float.IsInfinity(pos.y) || float.IsInfinity(pos.z);
+        }
+
+        public static Vector2Int RoundToVector2Int(Vector2 point)
+        {
+            return new Vector2Int(RoundFloatToInt(point.x), RoundFloatToInt(point.y));
+        }
+
+        public static Vector2Int GetMiddlePoint(List<Vector2Int> points)
+        {
+            if (points == null || points.Count == 0)
+                return Vector2Int.zero;
+
+            int sumX = 0;
+            int sumY = 0;
+            foreach (var point in points)
+            {
+                sumX += point.x;
+                sumY += point.y;
+            }
+
+            int averageX = sumX / points.Count;
+            int averageY = sumY / points.Count;
+
+            return new Vector2Int(averageX, averageY);
+        }
+
+        public static int RoundFloatToInt(float number)
+        {
+            double adjustment = 0.000000001;
+            return (int)Math.Round(number + adjustment);
         }
     }
 }

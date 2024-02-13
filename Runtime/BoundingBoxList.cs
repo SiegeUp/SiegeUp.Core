@@ -7,20 +7,50 @@ namespace SiegeUp.Core
     public class BoundingBoxList : MonoBehaviour
     {
         [SerializeField] List<BoundingBox> boundingBoxes;
-        public IReadOnlyList<BoundingBox> BoundingBoxes => boundingBoxes;
-        public BoundingBox MainBound => boundingBoxes.Count > 0 ? boundingBoxes[0] : null;
+        [SerializeField] List<BoundingBox> passableBoundingBoxes;
 
-        public List<Vector2> GetLocalIntersectingPoints()
+        public BoundingBox MainBound => boundingBoxes.Count > 0 ? boundingBoxes[0] : null;
+        public IReadOnlyList<BoundingBox> BoundingBoxes => boundingBoxes;
+
+        public List<Vector2Int> GetCurrentPointsOnGrid()
         {
-            List<Rect> boundigBoxesRects = boundingBoxes.Select(x => new Rect(x.transform.localPosition.GetXZ() - x.Size.GetXZ() / 2, x.Size.GetXZ())).ToList();
-            return GetLocalIntersectingPoints(boundigBoxesRects, transform.rotation.eulerAngles.y);
+            var intersectingPoints = GetPointsOnGrid(transform.position, transform.rotation, false);
+            return intersectingPoints.Select(x => MathUtils.RoundToVector2Int(x)).ToList();
         }
 
-        public List<Vector2> GetLocalIntersectingPoints(List<Rect> rects, float angle)
+        public List<Vector2Int> GetCurrentPassablePointsOnGrid()
         {
+            var intersectingPoints = GetPointsOnGrid(transform.position, transform.rotation, true);
+            return intersectingPoints.Select(x => MathUtils.RoundToVector2Int(x)).ToList();
+        }
+
+        public List<Vector2Int> GetPointsOnGrid(Vector3 position, Quaternion rotation, bool isPassable)
+        {
+            var intersectingPoints = GetIntersectingPoints(position, rotation, isPassable);
+            return intersectingPoints.Select(x => MathUtils.RoundToVector2Int(x)).ToList();
+        }
+
+        List<Vector2> GetIntersectingPoints(Vector3 position, Quaternion rotation, bool isPassable)
+        {
+            var localIntersectingPoints = GetLocalIntersectingPoints(rotation, isPassable);
+            return localIntersectingPoints.Select(x => x + position.GetXZ()).ToList();
+        }
+
+        List<Vector2> GetLocalIntersectingPoints(Quaternion rotation, bool isPassable)
+        {
+            var boundingBoxesToCheck = isPassable ? passableBoundingBoxes : boundingBoxes;
+            var boundigBoxesRects = boundingBoxesToCheck.Select(x => x.GetLocalRect()).ToList();
+            return GetLocalIntersectingPointsOfRects(boundigBoxesRects, rotation.eulerAngles.y);
+        }
+
+        public List<Vector2> GetLocalIntersectingPointsOfRects(List<Rect> rects, float angle)
+        {
+            if (rects == null || rects.Count == 0)
+                return new List<Vector2>();
+
             Vector2[] directions = new[] { new Vector2(1, 1), new Vector2(1, -1), new Vector2(-1, -1), new Vector2(-1, 1) };
             var rotQuaternion = Quaternion.Euler(0, 0, angle);
-            var worldPoints = new List<Vector2>();
+            var worldPoints = new HashSet<Vector2>();
 
             var overallRect = MathUtils.GetOverallRect(rects);
 
@@ -31,7 +61,7 @@ namespace SiegeUp.Core
             float maxSide = Mathf.Max(overallRect.size.x, overallRect.size.y);
             float diagonalSize = Mathf.Ceil(Mathf.Sqrt(maxSide * maxSide * 2));
 
-            float rotatedGridSide = Mathf.Ceil(overallRect.center.magnitude + diagonalSize / 2);
+            float rotatedGridSide = Mathf.Ceil(overallRect.center.magnitude + diagonalSize);
 
             for (float x = 0; x <= rotatedGridSide; x += 1)
             {
@@ -52,7 +82,7 @@ namespace SiegeUp.Core
                     }
                 }
             }
-            return worldPoints;
+            return worldPoints.ToList();
         }
 
 #if UNITY_EDITOR
@@ -70,21 +100,22 @@ namespace SiegeUp.Core
             transform.localPosition -= new Vector3(0, transform.localPosition.y, 0);
         }
 
-        void DrawRect(Color color, Vector3 point, Vector3 size)
-        {
-            var oldColor = Gizmos.color;
-            Gizmos.color = color;
-            Gizmos.DrawWireCube(point, size);
-            Gizmos.color = oldColor;
-        }
-
         void OnDrawGizmos()
         {
-            var points = GetLocalIntersectingPoints();
-            foreach (var point in points)
+            var gizmosGridHeight = transform.position.y;
+
+            var rawPoints = GetIntersectingPoints(transform.position, transform.rotation, false);
+            
+            foreach (var point in rawPoints)
             {
-                DrawRect(Color.blue, point.GetX0Y() + transform.position, Vector2.one.GetX0Y());
+                GizmosUtils.DrawRectWithStartAndSize(Color.blue, point.GetX0Y() + (Vector3.up * gizmosGridHeight), Vector2.one.GetX0Y());
             }
+
+            var passableGridPoints = GetCurrentPassablePointsOnGrid();
+            var notPassableGridPoints = GetCurrentPointsOnGrid();
+
+            GizmosUtils.DrawCells(Color.red, passableGridPoints, gizmosGridHeight + 0.2f, Vector2.one.GetX0Y());
+            GizmosUtils.DrawCells(Color.green, notPassableGridPoints, gizmosGridHeight, Vector2.one.GetX0Y());
         }
     }
 #endif
