@@ -1,5 +1,5 @@
 {
-    "name": "Tests",
+    "name": "SiegeUp.Core.Tests",
     "rootNamespace": "",
     "references": [
         "UnityEngine.TestRunner",
