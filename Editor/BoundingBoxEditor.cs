@@ -12,30 +12,31 @@ namespace SiegeUp.Core.Editor
 
         void OnSceneGUI()
         {
-            BoundingBox t = (target as BoundingBox);
+            BoundingBox boundingBox = (target as BoundingBox);
 
-            var boxCollider = t.GetComponent<BoxCollider>();
+            var boxCollider = boundingBox.GetComponent<BoxCollider>();
             if (boxCollider && boxCollider.enabled)
             {
-                t.Size = boxCollider.bounds.size;
-                t.transform.position += boxCollider.center;
-                t.transform.localScale = Vector3.one;
+                boundingBox.Size = boxCollider.bounds.size;
+                boundingBox.transform.position += boxCollider.center;
+                boundingBox.transform.localScale = Vector3.one;
                 boxCollider.enabled = false;
-                EditorUtility.SetDirty(t.gameObject);
+                EditorUtility.SetDirty(boundingBox.gameObject);
             }
 
-            boundsHandle.center = t.transform.position;
-            boundsHandle.size = t.Size;
+            boundsHandle.center = Vector2.zero;
+            boundsHandle.size = Vector3.Max(boundingBox.Size, Vector3.one);
 
             EditorGUI.BeginChangeCheck();
-            boundsHandle.DrawHandle();
+            using (new Handles.DrawingScope(boundingBox.transform.localToWorldMatrix))
+                boundsHandle.DrawHandle();
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(target, "Changed size");
-                t.Size = boundsHandle.size;
+                boundingBox.Size = boundsHandle.size;
             }
 
-            t.Size = new Vector3(t.Size.x, 0, t.Size.z);
+            boundingBox.Size = new Vector3(boundingBox.Size.x, 0, boundingBox.Size.z);
         }
     }
 }

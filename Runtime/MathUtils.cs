@@ -1,6 +1,9 @@
-﻿using System.Security.Cryptography;
+﻿using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
+using System.Linq;
+using System;
 
 namespace SiegeUp.Core
 {
@@ -63,6 +66,29 @@ namespace SiegeUp.Core
             var squareDist = diff.x * diff.x + diff.z * diff.z;
             float rangeVal = range;
             return squareDist < rangeVal * rangeVal;
+        }
+
+        public static Rect GetOverallRect(List<Rect> rects)
+        {
+            if (rects == null || rects.Count == 0)
+            {
+                return new Rect(); // Возвращает пустой Rect, если список пуст
+            }
+
+            float minX = float.MaxValue;
+            float minY = float.MaxValue;
+            float maxX = float.MinValue;
+            float maxY = float.MinValue;
+
+            foreach (Rect rect in rects)
+            {
+                if (rect.xMin < minX) minX = rect.xMin;
+                if (rect.yMin < minY) minY = rect.yMin;
+                if (rect.xMax > maxX) maxX = rect.xMax;
+                if (rect.yMax > maxY) maxY = rect.yMax;
+            }
+
+            return new Rect(minX, minY, maxX - minX, maxY - minY);
         }
 
         public static bool IsPointInCylinderSector(Vector3 point, Vector3 center, float radius, float height, float sectorAngle)
@@ -221,6 +247,36 @@ namespace SiegeUp.Core
         public static bool IsInfinity(Vector3 pos)
         {
             return float.IsInfinity(pos.x) || float.IsInfinity(pos.y) || float.IsInfinity(pos.z);
+        }
+
+        public static Vector2Int RoundToVector2Int(Vector2 point)
+        {
+            return new Vector2Int(RoundFloatToInt(point.x), RoundFloatToInt(point.y));
+        }
+
+        public static Vector2Int GetMiddlePoint(List<Vector2Int> points)
+        {
+            if (points == null || points.Count == 0)
+                return Vector2Int.zero;
+
+            int sumX = 0;
+            int sumY = 0;
+            foreach (var point in points)
+            {
+                sumX += point.x;
+                sumY += point.y;
+            }
+
+            int averageX = sumX / points.Count;
+            int averageY = sumY / points.Count;
+
+            return new Vector2Int(averageX, averageY);
+        }
+
+        public static int RoundFloatToInt(float number)
+        {
+            double adjustment = 0.000000001;
+            return (int)Math.Round(number + adjustment);
         }
     }
 }

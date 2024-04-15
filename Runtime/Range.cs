@@ -86,24 +86,29 @@ namespace SiegeUp.Core
             return false;
         }
 
+        //TODO: Check working with rotated rects
         public bool IsObjectInRange(GameObject obj)
         {
             var building = obj.GetComponent<BoxCollider>();
             if (building)
             {
                 var boundingBoxList = obj.GetComponent<BoundingBoxList>();
-                var boundingBox = boundingBoxList ? boundingBoxList.MainBound : null;   
-                if (boundingBox != null)
+                var boundingBoxes = boundingBoxList.BoundingBoxes;
+                if (boundingBoxes != null && boundingBoxes.Count != 0)
                 {
-                    var objPos = obj.transform.position;
-                    var rect = MathUtils.GetRectFromBoxWorld(obj.transform.position, obj.transform.rotation, boundingBox);
-                    var corner = new Vector3(rect.min.x, objPos.y, rect.min.y);
-                    var size = new Vector3(rect.size.x, objPos.y, rect.size.y);
-                    bool result = IsRectInRange(corner, size);
-                    return result;
-                }
-            }
+                    foreach (var boundingBox in boundingBoxes)
+                    {
+                        var objPos = obj.transform.position;
+                        var rect = MathUtils.GetRectFromBoxWorld(obj.transform.position, obj.transform.rotation, boundingBox);
+                        var corner = new Vector3(rect.min.x, objPos.y, rect.min.y);
+                        var size = new Vector3(rect.size.x, objPos.y, rect.size.y);
 
+                        if (IsRectInRange(corner, size))
+                            return true;
+                    }
+                }
+                return false;
+            }
             return IsPointInRange(obj.transform.position);
         }
     }
