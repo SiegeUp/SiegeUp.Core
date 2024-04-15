@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
 #if UNITY_EDITOR
@@ -31,9 +32,28 @@ namespace SiegeUp.Core
 
         static ReflectionUtils()
         {
-            var types = AppDomain.CurrentDomain.GetAssemblies()
-                .Where(i => i.GetName().Name is "SiegeUp" or "SiegeUp.Core")
-                .SelectMany(i => i.GetTypes());
+            //Stopwatch stopwatch = new Stopwatch();
+            //stopwatch.Start();
+
+            var excludedPrefixes = new string[] {
+            "System", "Unity", "UnityEngine", "UnityEditor",
+            "SyntaxTree", "nunit",
+            "ReportGeneratorMerged", "Unrelated", "netstandard",
+            "SyntaxTree", "Mono", "Anonymously",
+            "ScriptCompilationBuildProgram", "mscorlib"
+            };
+
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+                .Where(assembly => !excludedPrefixes.Any(prefix => assembly.GetName().Name.StartsWith(prefix)))
+                .ToArray();
+
+            //foreach(var assembly in assemblies)
+            //{
+            //    UnityEngine.Debug.Log(assembly.GetName().Name);
+            //}
+
+            var types = assemblies.SelectMany(i => i.GetTypes());
+            
 
             foreach (var type in types)
             {
@@ -43,7 +63,7 @@ namespace SiegeUp.Core
                     var attribute = attributes[0] as ComponentId;
                     if (componentsIdMap.ContainsKey(attribute.Id))
                     {
-                        Debug.LogError($"Component duplicate: {type.Name} and {componentsIdMap[attribute.Id].Name} Id: {attribute.Id}");
+                        UnityEngine.Debug.LogError($"Component duplicate: {type.Name} and {componentsIdMap[attribute.Id].Name} Id: {attribute.Id}");
                         continue;
                     }
 
@@ -65,7 +85,7 @@ namespace SiegeUp.Core
                             var methodId = methodIds[0] as MethodId;
 #if UNITY_EDITOR
                             if (realMethod == null)
-                                Debug.LogError($"Method not found: {method.Name} [{methodId.Id}]. Make sure, that method has correct name, attriputes and parameters.");
+                                UnityEngine.Debug.LogError($"Method not found: {method.Name} [{methodId.Id}]. Make sure, that method has correct name, attriputes and parameters.");
 #endif
                             methodMap.methods[methodId.Id] = new Method
                             {
@@ -76,6 +96,10 @@ namespace SiegeUp.Core
                     }
                 }
             }
+
+            //stopwatch.Stop();
+            //UnityEngine.Debug.Log($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
+            //UnityEngine.Debug.Log($"Number of types found: {types.Count()}");
         }
 
         public static string ArgsToString(object[] args)
@@ -143,7 +167,7 @@ namespace SiegeUp.Core
             var methodIds = methodInfo.GetCustomAttributes(typeof(MethodId), false);
             if (methodIds.Length == 1)
                 return (methodIds[0] as MethodId).Id;
-            Debug.LogError("Can't find method id for " + methodInfo.Name);
+            UnityEngine.Debug.LogError("Can't find method id for " + methodInfo.Name);
             return -1;
         }
 
@@ -152,7 +176,7 @@ namespace SiegeUp.Core
             var methodIds = fieldInfo.GetCustomAttributes(typeof(AutoSerializeAttribute), false);
             if (methodIds.Length == 1)
                 return (methodIds[0] as AutoSerializeAttribute).Id;
-            Debug.LogError("Can't find field id for " + fieldInfo.Name);
+            UnityEngine.Debug.LogError("Can't find field id for " + fieldInfo.Name);
             return -1;
         }
 
@@ -166,7 +190,7 @@ namespace SiegeUp.Core
             int start = strUniqueId.LastIndexOf('_');
             if (start != -1)
                 return new Guid(strUniqueId.Substring(start + 1));
-            Debug.LogError("String Guid seems to be broken " + strUniqueId);
+            UnityEngine.Debug.LogError("String Guid seems to be broken " + strUniqueId);
             return new Guid(strUniqueId);
         }
 
