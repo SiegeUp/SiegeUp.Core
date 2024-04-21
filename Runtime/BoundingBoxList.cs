@@ -117,6 +117,6 @@ namespace SiegeUp.Core
             GizmosUtils.DrawCells(Color.red, passableGridPoints, gizmosGridHeight + 0.2f, Vector2.one.GetX0Y());
             GizmosUtils.DrawCells(Color.green, notPassableGridPoints, gizmosGridHeight, Vector2.one.GetX0Y());
         }
-    }
 #endif
+    }
 }
