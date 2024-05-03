@@ -93,18 +93,21 @@ namespace SiegeUp.Core
             if (building)
             {
                 var boundingBoxList = obj.GetComponent<BoundingBoxList>();
-                var boundingBoxes = boundingBoxList.BoundingBoxes;
-                if (boundingBoxes != null && boundingBoxes.Count != 0)
+                if (boundingBoxList)
                 {
-                    foreach (var boundingBox in boundingBoxes)
+                    var boundingBoxes = boundingBoxList.BoundingBoxes;
+                    if (boundingBoxes != null && boundingBoxes.Count != 0)
                     {
-                        var objPos = obj.transform.position;
-                        var rect = MathUtils.GetRectFromBoxWorld(obj.transform.position, obj.transform.rotation, boundingBox);
-                        var corner = new Vector3(rect.min.x, objPos.y, rect.min.y);
-                        var size = new Vector3(rect.size.x, objPos.y, rect.size.y);
+                        foreach (var boundingBox in boundingBoxes)
+                        {
+                            var objPos = obj.transform.position;
+                            var rect = MathUtils.GetRectFromBoxWorld(obj.transform.position, obj.transform.rotation, boundingBox);
+                            var corner = new Vector3(rect.min.x, objPos.y, rect.min.y);
+                            var size = new Vector3(rect.size.x, objPos.y, rect.size.y);
 
-                        if (IsRectInRange(corner, size))
-                            return true;
+                            if (IsRectInRange(corner, size))
+                                return true;
+                        }
                     }
                 }
                 return false;
