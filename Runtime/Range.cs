@@ -114,7 +114,10 @@ namespace SiegeUp.Core
                         return true;
                 }
             }
-            Debug.LogError($"There is no any bounding box in boundig box list of {boundingBoxList.gameObject.name}");
+            else
+            {
+                Debug.LogError($"There is no any bounding box in boundig box list of {boundingBoxList.gameObject.name}");
+            }
             return false;
         }
     }
