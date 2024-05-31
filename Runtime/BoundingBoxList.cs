@@ -6,44 +6,120 @@ namespace SiegeUp.Core
 {
     public class BoundingBoxList : MonoBehaviour
     {
-        [SerializeField] List<BoundingBox> boundingBoxes;
+        [SerializeField] BoundingBox mainBoundingBox;
         [SerializeField] List<BoundingBox> passableBoundingBoxes;
 
-        public BoundingBox MainBound => boundingBoxes.Count > 0 ? boundingBoxes[0] : null;
-        public IReadOnlyList<BoundingBox> BoundingBoxes => boundingBoxes;
+        [SerializeField] bool showMainBoundIntersectionPointsGizmos = true;
+        [SerializeField] bool showMainBoundPointsOnGridGizmos = true;
+        [SerializeField] bool showMainBoundPassablePointsOnGridGizmos = true;
 
-        public List<Vector2Int> GetCurrentPointsOnGrid()
-        {
-            var intersectingPoints = GetPointsOnGrid(transform.position, transform.rotation, false);
-            return intersectingPoints.Select(x => MathUtils.RoundToVector2Int(x)).ToList();
-        }
+        public BoundingBox MainBound => mainBoundingBox;
 
         public List<Vector2Int> GetCurrentPassablePointsOnGrid()
         {
-            var intersectingPoints = GetPointsOnGrid(transform.position, transform.rotation, true);
-            return intersectingPoints.Select(x => MathUtils.RoundToVector2Int(x)).ToList();
+            var passablePointsOnGrid = GetPassablePointsOnGrid(transform.position, transform.rotation);
+            return passablePointsOnGrid.Select(x => MathUtils.RoundToVector2Int(x)).ToList();
         }
 
-        public List<Vector2Int> GetPointsOnGrid(Vector3 position, Quaternion rotation, bool isPassable)
+        public List<Vector2Int> GetPassablePointsOnGrid(Vector3 position, Quaternion rotation)
         {
-            var intersectingPoints = GetIntersectingPoints(position, rotation, isPassable);
-            return intersectingPoints.Select(x => MathUtils.RoundToVector2Int(x)).ToList();
+            var passableIntersectingPoints = GetPassableIntersectingPoints(position, rotation);
+            return passableIntersectingPoints.Select(x => MathUtils.RoundToVector2Int(x)).ToList();
         }
 
-        List<Vector2> GetIntersectingPoints(Vector3 position, Quaternion rotation, bool isPassable)
+        List<Vector2> GetPassableIntersectingPoints(Vector3 position, Quaternion rotation)
         {
-            var localIntersectingPoints = GetLocalIntersectingPoints(rotation, isPassable);
-            return localIntersectingPoints.Select(x => x + position.GetXZ()).ToList();
+            List<Vector2> passableLocalIntersectingPoints = new List<Vector2>();
+            foreach (var passableBoundingBox in passableBoundingBoxes)
+            {
+                passableLocalIntersectingPoints.AddRange(GetIntersectingPoints(passableBoundingBox.GetLocalRect(), rotation.eulerAngles.y));
+            }
+            var passableIntersectingPoints = passableLocalIntersectingPoints.Select(x => x + position.GetXZ()).ToList();
+            return passableIntersectingPoints;
         }
+        
 
-        List<Vector2> GetLocalIntersectingPoints(Quaternion rotation, bool isPassable)
+        public List<Vector2Int> GetMainBoundCurrentPointsOnGrid()
         {
-            var boundingBoxesToCheck = isPassable ? passableBoundingBoxes : boundingBoxes;
-            var boundigBoxesRects = boundingBoxesToCheck.Select(x => x.GetLocalRect()).ToList();
-            return GetLocalIntersectingPointsOfRects(boundigBoxesRects, rotation.eulerAngles.y);
+            return GetMainBoundPointsOnGrid(transform.position, transform.rotation);
         }
 
-        public List<Vector2> GetLocalIntersectingPointsOfRects(List<Rect> rects, float angle)
+        public List<Vector2Int> GetMainBoundPointsOnGrid(Vector3 position, Quaternion rotation)
+        {
+            var mainBoundIntersectingPoints = GetMainBoundIntersectingPoints(position, rotation);
+            return mainBoundIntersectingPoints.Select(x => MathUtils.RoundToVector2Int(x)).ToList();
+        }
+
+        List<Vector2> GetMainBoundIntersectingPoints(Vector3 position, Quaternion rotation)
+        {
+            var localMainBoundIntersectingPoints = GetIntersectingPoints(mainBoundingBox.GetLocalRect(), rotation.eulerAngles.y);
+            var mainBoundintersectingPoints = localMainBoundIntersectingPoints.Select(x => x + position.GetXZ()).ToList();
+            return mainBoundintersectingPoints;
+        }
+        
+        public List<Vector2> GetIntersectingPoints(Rect rect, float angle)
+        {
+            Vector2[] directions = new[] { new Vector2(1, 1), new Vector2(1, -1), new Vector2(-1, -1), new Vector2(-1, 1) };
+            var rotQuaternion = Quaternion.Euler(0, 0, angle);
+            var worldPoints = new List<Vector2>();
+
+            float offsetX = Mathf.Ceil(rect.size.x) % 2 == 0 ? 0.5f : 0;
+            float offsetY = Mathf.Ceil(rect.size.y) % 2 == 0 ? 0.5f : 0;
+            var offset = new Vector2(offsetX, offsetY);
+            Debug.Log("Current offset: " + offsetX + " : " + offsetY);
+            float maxSide = Mathf.Max(rect.size.x, rect.size.y);
+            float diagonalSize = Mathf.Ceil(Mathf.Sqrt(maxSide * maxSide * 2));
+            for (float x = 0; x <= diagonalSize; x += 1)
+            {
+                for (float y = 0; y <= diagonalSize; y += 1)
+                {
+                    foreach (var direction in directions)
+                    {
+                        var point = new Vector2(x * direction.x, y * direction.y);
+
+                        var worldPoint = (Vector2)(rotQuaternion * point) + offset;
+                        if (rect.Contains(worldPoint))
+                            worldPoints.Add(point + (Vector2)(Quaternion.Euler(0, 0, -angle) * offset) - new Vector2(0.5f, 0.5f));
+                    }
+                }
+            }
+            return worldPoints;
+        }
+
+#if UNITY_EDITOR
+        [ContextMenu("Set first found in children bound as main")]
+        public void SetFirstFoundInChildrenBoundAsMain()
+        {
+            mainBoundingBox = GetComponentInChildren<BoundingBox>();
+            UnityEditor.EditorUtility.SetDirty(gameObject);
+        }
+#endif
+        void LateUpdate()
+        {
+            if (Application.isPlaying)
+                return;
+            transform.localPosition -= new Vector3(0, transform.localPosition.y, 0);
+        }
+
+        void OnDrawGizmos()
+        {
+            var gizmosGridHeight = transform.position.y;
+            var rawPoints = GetMainBoundIntersectingPoints(transform.position, transform.rotation);
+            var passableGridPoints = GetCurrentPassablePointsOnGrid();
+            var notPassableGridPoints = GetMainBoundCurrentPointsOnGrid();
+
+            if (showMainBoundIntersectionPointsGizmos)
+                foreach (var point in rawPoints)
+                    GizmosUtils.DrawRectWithStartAndSize(Color.blue, point.GetX0Y() + (Vector3.up * gizmosGridHeight), Vector2.one.GetX0Y());
+
+            if (showMainBoundPassablePointsOnGridGizmos)
+                GizmosUtils.DrawCells(Color.red, passableGridPoints, gizmosGridHeight + 0.2f, Vector2.one.GetX0Y());
+
+            if (showMainBoundPointsOnGridGizmos)
+                GizmosUtils.DrawCells(Color.green, notPassableGridPoints, gizmosGridHeight, Vector2.one.GetX0Y());
+        }
+
+        public List<Vector2> GetLocalIntersectingPointsLegacy(List<Rect> rects, float angle)
         {
             if (rects == null || rects.Count == 0)
                 return new List<Vector2>();
@@ -84,39 +160,5 @@ namespace SiegeUp.Core
             }
             return worldPoints.ToList();
         }
-
-#if UNITY_EDITOR
-        [ContextMenu("Find all bounds")]
-        public void FindAllBounds()
-        {
-            boundingBoxes = new List<BoundingBox>(GetComponentsInChildren<BoundingBox>());
-            UnityEditor.EditorUtility.SetDirty(gameObject);
-        }
-
-        void LateUpdate()
-        {
-            if (Application.isPlaying)
-                return;
-            transform.localPosition -= new Vector3(0, transform.localPosition.y, 0);
-        }
-
-        void OnDrawGizmos()
-        {
-            var gizmosGridHeight = transform.position.y;
-
-            var rawPoints = GetIntersectingPoints(transform.position, transform.rotation, false);
-            
-            foreach (var point in rawPoints)
-            {
-                GizmosUtils.DrawRectWithStartAndSize(Color.blue, point.GetX0Y() + (Vector3.up * gizmosGridHeight), Vector2.one.GetX0Y());
-            }
-
-            var passableGridPoints = GetCurrentPassablePointsOnGrid();
-            var notPassableGridPoints = GetCurrentPointsOnGrid();
-
-            GizmosUtils.DrawCells(Color.red, passableGridPoints, gizmosGridHeight + 0.2f, Vector2.one.GetX0Y());
-            GizmosUtils.DrawCells(Color.green, notPassableGridPoints, gizmosGridHeight, Vector2.one.GetX0Y());
-        }
-#endif
     }
 }

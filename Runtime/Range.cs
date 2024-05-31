@@ -92,27 +92,24 @@ namespace SiegeUp.Core
             var boundingBoxList = obj.GetComponent<BoundingBoxList>();
 
             if (boundingBoxList)
-                return IsObjectWithBoundingBoxesInRange(boundingBoxList);
+                return IsObjectWithBoundingBoxInRange(boundingBoxList);
 
             return IsPointInRange(obj.transform.position);
         }
 
-        public bool IsObjectWithBoundingBoxesInRange(BoundingBoxList boundingBoxList)
+        public bool IsObjectWithBoundingBoxInRange(BoundingBoxList boundingBoxList)
         {
-            var boundingBoxes = boundingBoxList.BoundingBoxes;
-            if (boundingBoxes != null && boundingBoxes.Count != 0)
+            var mainBoundingBox = boundingBoxList.MainBound;
+            if (mainBoundingBox != null)
             {
-                foreach (var boundingBox in boundingBoxes)
-                {
-                    boundingBoxList.gameObject.transform.GetPositionAndRotation(out Vector3 objectPosition, out var objectRotation);
+                boundingBoxList.gameObject.transform.GetPositionAndRotation(out Vector3 objectPosition, out var objectRotation);
 
-                    var rect = MathUtils.GetRectFromBoxWorld(objectPosition, objectRotation, boundingBox);
-                    var corner = new Vector3(rect.min.x, objectPosition.y, rect.min.y);
-                    var size = new Vector3(rect.size.x, objectPosition.y, rect.size.y);
+                var rect = MathUtils.GetRectFromBoxWorld(objectPosition, objectRotation, mainBoundingBox);
+                var corner = new Vector3(rect.min.x, objectPosition.y, rect.min.y);
+                var size = new Vector3(rect.size.x, objectPosition.y, rect.size.y);
 
-                    if (IsRectInRange(corner, size))
-                        return true;
-                }
+                if (IsRectInRange(corner, size))
+                    return true;
             }
             else
             {
