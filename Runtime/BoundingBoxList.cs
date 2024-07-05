@@ -118,47 +118,5 @@ namespace SiegeUp.Core
             if (showMainBoundPointsOnGridGizmos)
                 GizmosUtils.DrawCells(Color.green, notPassableGridPoints, gizmosGridHeight, Vector2.one.GetX0Y());
         }
-
-        public List<Vector2> GetLocalIntersectingPointsLegacy(List<Rect> rects, float angle)
-        {
-            if (rects == null || rects.Count == 0)
-                return new List<Vector2>();
-
-            Vector2[] directions = new[] { new Vector2(1, 1), new Vector2(1, -1), new Vector2(-1, -1), new Vector2(-1, 1) };
-            var rotQuaternion = Quaternion.Euler(0, 0, angle);
-            var worldPoints = new HashSet<Vector2>();
-
-            var overallRect = MathUtils.GetOverallRect(rects);
-
-            float offsetX = Mathf.Ceil(overallRect.size.x) % 2 == 0 ? 0.5f : 0;
-            float offsetY = Mathf.Ceil(overallRect.size.y) % 2 == 0 ? 0.5f : 0;
-            var offset = new Vector2(offsetX, offsetY);
-
-            float maxSide = Mathf.Max(overallRect.size.x, overallRect.size.y);
-            float diagonalSize = Mathf.Ceil(Mathf.Sqrt(maxSide * maxSide * 2));
-
-            float rotatedGridSide = Mathf.Ceil(overallRect.center.magnitude + diagonalSize);
-
-            for (float x = 0; x <= rotatedGridSide; x += 1)
-            {
-                for (float y = 0; y <= rotatedGridSide; y += 1)
-                {
-                    foreach (var direction in directions)
-                    {
-                        var point = new Vector2(x * direction.x, y * direction.y);
-                        var worldPoint = (Vector2)(rotQuaternion * point) + offset;
-
-                        foreach (var rect in rects)
-                        {
-                            if (rect.Contains(worldPoint))
-                            {
-                                worldPoints.Add(point + (Vector2)(Quaternion.Euler(0, 0, -angle) * offset));
-                            }
-                        }
-                    }
-                }
-            }
-            return worldPoints.ToList();
-        }
     }
 }
