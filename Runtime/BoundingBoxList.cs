@@ -79,7 +79,11 @@ namespace SiegeUp.Core
 
                         var worldPoint = (Vector2)(rotQuaternion * point) + offset;
                         if (rect.Contains(worldPoint))
-                            worldPoints.Add(point + (Vector2)(Quaternion.Euler(0, 0, -angle) * offset) - new Vector2(0.5f, 0.5f));
+                        {
+                            var newPoint = point + (Vector2)(Quaternion.Euler(0, 0, -angle) * offset) - new Vector2(0.5f, 0.5f);
+                            if (!worldPoints.Contains(newPoint))
+                                worldPoints.Add(newPoint);
+                        }
                     }
                 }
             }
