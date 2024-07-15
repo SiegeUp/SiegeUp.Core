@@ -64,12 +64,12 @@ namespace SiegeUp.Core
 
         public static Vector2Int Round(this Vector2 v)
         {
-            return new Vector2Int((int)v.x, (int)v.y);
+            return new Vector2Int((int)Math.Round(v.x), (int)Math.Round(v.y));
         }
 
         public static Vector3Int Round(this Vector3 v)
         {
-            return new Vector3Int((int)v.x, (int)v.y, (int)v.z);
+            return new Vector3Int((int)Math.Round(v.x), (int)Math.Round(v.y), (int)Math.Round(v.z));
         }
 
         public static Vector2Int Ceil(this Vector2 v)

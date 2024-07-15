@@ -17,7 +17,7 @@ namespace SiegeUp.Core.Editor
             var boxCollider = boundingBox.GetComponent<BoxCollider>();
             if (boxCollider && boxCollider.enabled)
             {
-                boundingBox.Size = boxCollider.bounds.size;
+                boundingBox.Size = boxCollider.bounds.size.Ceil();
                 boundingBox.transform.position += boxCollider.center;
                 boundingBox.transform.localScale = Vector3.one;
                 boxCollider.enabled = false;
@@ -33,10 +33,10 @@ namespace SiegeUp.Core.Editor
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(target, "Changed size");
-                boundingBox.Size = boundsHandle.size;
+                boundingBox.Size = boundsHandle.size.Ceil();
             }
 
-            boundingBox.Size = new Vector3(boundingBox.Size.x, 0, boundingBox.Size.z);
+            boundingBox.Size = new Vector3Int(boundingBox.Size.x, 0, boundingBox.Size.z);
         }
     }
 }
