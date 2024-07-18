@@ -8,16 +8,13 @@ namespace SiegeUp.Core
     public class BoundingBox : MonoBehaviour
     {
         [SerializeField]
-        Vector3 size = Vector3.one;
+        Vector3Int size = Vector3Int.one;
 
-        [SerializeField]
-        Vector3Int sizeInt = Vector3Int.one;
-
-        public Vector3Int Size { get => sizeInt; set => sizeInt = value; }
+        public Vector3Int Size { get => size; set => size = value; }
 
         public Rect GetLocalRect()
         {
-            return new Rect(transform.localPosition.GetXZ() - Size.GetXZ() / 2, Size.GetXZ());
+            return new Rect(transform.localPosition.GetXZ() - ((Vector2)size.GetXZ()) / 2, (Vector2) size.GetXZ());
         }
 
         public Rect GetRect(Quaternion rotation)
