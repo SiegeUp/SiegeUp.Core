@@ -68,50 +68,6 @@ namespace SiegeUp.Core
             return squareDist < rangeVal * rangeVal;
         }
 
-        public static Rect GetOverallRect(List<Rect> rects)
-        {
-            if (rects == null || rects.Count == 0)
-            {
-                return new Rect(); // Возвращает пустой Rect, если список пуст
-            }
-
-            float minX = float.MaxValue;
-            float minY = float.MaxValue;
-            float maxX = float.MinValue;
-            float maxY = float.MinValue;
-
-            foreach (Rect rect in rects)
-            {
-                if (rect.xMin < minX) minX = rect.xMin;
-                if (rect.yMin < minY) minY = rect.yMin;
-                if (rect.xMax > maxX) maxX = rect.xMax;
-                if (rect.yMax > maxY) maxY = rect.yMax;
-            }
-
-            return new Rect(minX, minY, maxX - minX, maxY - minY);
-        }
-
-        public static bool IsPointInCylinderSector(Vector3 point, Vector3 center, float radius, float height, float sectorAngle)
-        {
-            // Перемещение точки и центра цилиндра так, чтобы центр цилиндра оказался в начале координат
-            Vector3 relativePoint = point - center;
-
-            // Проверка высоты
-            if (relativePoint.y < 0 || relativePoint.y > height)
-                return false;
-
-            // Проверка радиуса
-            float distanceSquared = relativePoint.x * relativePoint.x + relativePoint.z * relativePoint.z;
-            if (distanceSquared > radius * radius)
-                return false;
-
-            // Проверка угла сектора
-            float angle = Mathf.Atan2(relativePoint.z, relativePoint.x) * Mathf.Rad2Deg;
-            if (angle < 0) angle += 360;
-
-            return angle <= sectorAngle;
-        }
-
         public static bool IsRectInRange3D(Vector3 corner, Vector3 size, Vector3 pos, float range)
         {
             float deltaX = pos.x - Mathf.Max(corner.x, Mathf.Min(pos.x, corner.x + size.x));
