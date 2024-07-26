@@ -66,7 +66,6 @@ namespace SiegeUp.Core
             float offsetX = Mathf.Ceil(rect.size.x) % 2 == 0 ? 0.5f : 0;
             float offsetY = Mathf.Ceil(rect.size.y) % 2 == 0 ? 0.5f : 0;
             var offset = new Vector2(offsetX, offsetY);
-            Debug.Log("Current offset: " + offsetX + " : " + offsetY);
             float maxSide = Mathf.Max(rect.size.x, rect.size.y);
             float diagonalSize = Mathf.Ceil(Mathf.Sqrt(maxSide * maxSide * 2));
             for (float x = 0; x <= diagonalSize; x += 1)

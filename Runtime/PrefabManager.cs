@@ -85,6 +85,27 @@ namespace SiegeUp.Core
 
             EditorUtility.SetDirty(this);
         }
+
+        [ContextMenu("CheckPrefabs")]
+        public void CheckPrefabs()
+        {
+            foreach (var prefab in prefabMap.Values)
+            {
+                var boundingBoxes = prefab.GetComponentsInChildren<BoundingBox>();  
+                foreach (var boundingBox in boundingBoxes)
+                {
+                    if (boundingBox.Size.x <= 0 || boundingBox.Size.z <= 0)
+                    {
+                        Debug.Log($"Wrong bounding box size in prefab {prefab.name}!", prefab);
+                    }
+                    if (boundingBox.gameObject.transform.position != Vector3.zero)
+                    {
+                        Debug.Log($"Wrong bounding box position in prefab {prefab.name}!", prefab);
+                    }
+                }
+            }
+        }
+
 #endif
     }
 }
