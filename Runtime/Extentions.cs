@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace SiegeUp.Core
@@ -31,7 +32,20 @@ namespace SiegeUp.Core
 
             return -1;
         }
-        
+
+        public static void RemoveAll<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, Func<KeyValuePair<TKey, TValue>, bool> condition)
+        {
+            if (dictionary == null) throw new ArgumentNullException(nameof(dictionary));
+            if (condition == null) throw new ArgumentNullException(nameof(condition));
+
+            var keysToRemove = dictionary.Where(condition).Select(kvp => kvp.Key).ToList();
+
+            foreach (var key in keysToRemove)
+            {
+                dictionary.Remove(key);
+            }
+        }
+
         public static T NullCheck<T>(this T unityObject) where T : UnityEngine.Object
         {
             return unityObject ? unityObject : null;
