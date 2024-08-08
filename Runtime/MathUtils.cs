@@ -237,18 +237,21 @@ namespace SiegeUp.Core
         public static List<Vector2Int> GetPointsAroundPoints(List<Vector2Int> points)
         {
             var pointsAround = new HashSet<Vector2Int>();
+            var pointsSet = new HashSet<Vector2Int>(points);
 
             Vector2Int[] allSides = { new(1, 1), new(1, -1), new(-1, -1), new(-1, 1), new(0, 1), new(1, 0), new(0, -1), new(-1, 0) };
+
             foreach (var point in points)
             {
                 foreach (var side in allSides)
                 {
                     var pointToCheck = point + side;
 
-                    if (!points.Contains(pointToCheck))
+                    if (!pointsSet.Contains(pointToCheck))
                         pointsAround.Add(pointToCheck);
                 }
             }
+
             return pointsAround.ToList();
         }
 
