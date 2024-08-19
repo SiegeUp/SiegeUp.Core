@@ -61,6 +61,11 @@ namespace SiegeUp.Core
             return new Vector2(v3.x, v3.z);
         }
 
+        public static Vector2 GetXY(this Vector3 v3)
+        {
+            return new Vector2(v3.x, v3.z);
+        }
+
         public static Vector2Int GetXZ(this Vector3Int v3)
         {
             return new Vector2Int(v3.x, v3.z);
