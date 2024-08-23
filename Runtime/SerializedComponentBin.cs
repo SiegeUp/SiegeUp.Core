@@ -49,7 +49,10 @@ namespace SiegeUp.Core
         {
             int index = autoSerialize.fields.FindIndex(item => item.id == fieldId);
             if (index == -1)
-                throw new Exception($"No such field {id} in {ReflectionUtils.GetComponentById(id)}");
+            {
+                autoSerialize.fields.Add(default);
+                index = autoSerialize.fields.Count - 1;
+            }
 
             autoSerialize.fields[index] = new AutoSerializedFieldBin { id = fieldId, data = AutoSerializeTool.Serialize(value, typeof(T)) };
         }
