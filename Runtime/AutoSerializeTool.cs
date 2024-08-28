@@ -413,6 +413,17 @@ namespace SiegeUp.Core
                 pos += BinaryUtil.WriteInt32(ref dest, pos, bytes.Length);
                 pos += BinaryUtil.WriteBytes(ref dest, pos, bytes);
             }
+            else if (type.IsArray)
+            {
+                var array = val as Array;
+                var elementType = type.GetElementType();
+                pos += BinaryUtil.WriteInt32(ref dest, pos, array.Length);
+
+                foreach (var element in array)
+                {
+                    Write(ref dest, ref pos, elementType, element);
+                }
+            }
             else if (Array.Find(type.GetInterfaces(), item => item == typeof(IList)) != null)
             {
                 if (val != null)
@@ -653,6 +664,19 @@ namespace SiegeUp.Core
                 pos += sizeof(int);
                 result = BinaryUtil.ReadBytes(ref source, pos, length);
                 pos += length;
+            }
+            else if (type.IsArray)
+            {
+                var elementType = type.GetElementType();
+                int length = BinaryUtil.ReadInt32(ref source, pos);
+                pos += sizeof(int);
+
+                Array array = Array.CreateInstance(elementType, length);
+                for (int i = 0; i < length; i++)
+                {
+                    array.SetValue(Read(source, ref pos, elementType, context), i);
+                }
+                result = array;
             }
             else if (Array.Find(type.GetInterfaces(), item => item == typeof(IList)) != null)
             {
