@@ -8,6 +8,7 @@ namespace SiegeUp.Core
     public class RestoreProcess
     {
         public delegate GameObject Spawn(GameObject prefab, Vector3 position, Quaternion rotation = default, Guid? newUniqueId = null);
+        public delegate void Add(UniqueId uniqueId);
         public delegate void Destroy(GameObject gameObject);
 
         public IReadOnlyDictionary<Guid, SerializedGameObjectBin> serializedGameObjectsBin;
@@ -19,6 +20,7 @@ namespace SiegeUp.Core
         public List<Type> ignoredComponentTypes;
         public Bounds bounds;
         public Spawn spawn;
+        public Add add;
         public Destroy destroy;
 
         public RestoreProcess(IReadOnlyDictionary<Guid, SerializedGameObjectBin> serializedObjectsBin, IReadOnlyDictionary<Guid, UniqueId> unitsIdsOnScene, Transform parent = null, int version = 0)

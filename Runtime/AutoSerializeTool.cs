@@ -1125,6 +1125,7 @@ namespace SiegeUp.Core
                 targetObject.name = element.name.Replace("(Clone)", "");
                 var newUniqueId = targetObject.AddComponent<UniqueId>();
                 newUniqueId.ResetId(element.id);
+                restoreProcess.add(newUniqueId);
 
                 foreach (var serializedComponent in element.serializedComponents)
                 {
