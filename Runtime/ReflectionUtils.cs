@@ -76,17 +76,23 @@ namespace SiegeUp.Core
                                        | System.Reflection.BindingFlags.NonPublic
                                        | System.Reflection.BindingFlags.Instance;
                     var methods = type.GetMethods(bindingFlags);
+                    List<int> methoidIdsInType = new();
                     foreach (var method in methods)
                     {
                         var methodIds = method.GetCustomAttributes(typeof(MethodId), false);
-                        if (methodIds.Length == 1)
+                        if (methodIds.Length == 1) 
                         {
                             var realMethod = Array.Find(methods, i => i.Name == method.Name && i.GetCustomAttributes(typeof(MethodId), false).Length == 0);
                             var methodId = methodIds[0] as MethodId;
-#if UNITY_EDITOR
+#if UNITY_EDITOR            
+                            if (!methoidIdsInType.Contains(methodId.Id))
+                                methoidIdsInType.Add(methodId.Id);
+                            else
+                                UnityEngine.Debug.LogError($"Type {type.Name} has few methods with same MethodId: {methodId.Id}.");
+
                             if (realMethod == null)
                                 UnityEngine.Debug.LogError($"Method not found: {method.Name} [{methodId.Id}]. Make sure, that method has correct name, attriputes and parameters.");
-#endif
+#endif  
                             methodMap.methods[methodId.Id] = new Method
                             {
                                 method = method,
