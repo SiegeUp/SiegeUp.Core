@@ -260,5 +260,32 @@ namespace SiegeUp.Core
             double adjustment = 0.000000001;
             return (int)Math.Round(number + adjustment);
         }
+
+        public static List<Vector2> GetPointsAroundBox(Rect rect, float distance, int step)
+        {
+            List<Vector2> points = new();
+            var corner = rect.position - new Vector2(distance, distance);
+            var offset = Vector2.one * (distance - 0.1f);
+            for (float x = 0; x < rect.size.x + distance * 2; x += step)
+            {
+                for (float y = 0; y < rect.size.y + distance * 2; y += step)
+                {
+                    var point = corner + new Vector2(x, y) + Vector2.one * 0.5f;
+
+                    if (!rect.Contains(point) && MathUtils.IsRectInRange2D(rect.position, rect.size, point, distance))
+                    {
+                        points.Add(point);
+                        Debug.DrawLine(new Vector3(point.x, 0, point.y), new Vector3(point.x, 2, point.y), Color.green, 10.0f);
+                    }
+                }
+            }
+            return points;
+        }
+
+        public static List<Vector2> SortPointsByDistanceToPoint(List<Vector2> points, Vector2 point)
+        {
+            points.Sort((item1, item2) => (int)((Vector2.Distance(item1, point) - Vector2.Distance(item2, point)) * 100.0f));
+            return points;
+        }
     }
 }

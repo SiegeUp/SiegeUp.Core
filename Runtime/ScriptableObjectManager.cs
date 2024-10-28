@@ -36,6 +36,16 @@ namespace SiegeUp.Core
             scriptableObjectsMap.Clear();
             foreach (var scriptableObject in initialList)
             {
+                if (scriptableObject == null)
+                {
+                    Debug.LogError($"Trying to add null ScriptableObject!");
+                    continue;
+                }
+                if (scriptableObject.Id == null)
+                {
+                    Debug.LogError($"Trying to add ScriptableObject with null ID! {scriptableObject.name}");
+                    continue;
+                }
                 scriptableObjectsMap.Add(scriptableObject.Id, scriptableObject);
             }
         }
@@ -49,7 +59,7 @@ namespace SiegeUp.Core
         List<T> FindAllScriptableObjects<T>() where T : ScriptableObject
         {
             var resources = Resources.FindObjectsOfTypeAll<T>();
-            var initialPrefabs = resources.Where(resource => AssetDatabase.Contains(resource) && !AssetDatabase.IsSubAsset(resource)).ToList();
+            var initialPrefabs = resources.Where(resource => AssetDatabase.Contains(resource) && !AssetDatabase.IsSubAsset(resource)).Select(i => i).ToList();
             initialPrefabs.Sort((a, b) => String.Compare(AssetDatabase.GetAssetPath(a), AssetDatabase.GetAssetPath(b), StringComparison.Ordinal));
             return initialPrefabs;
         }
@@ -60,10 +70,10 @@ namespace SiegeUp.Core
             initialList = FindAllScriptableObjects<ScriptableObjectWithId>();
             foreach (var translation in initialList)
             {
-                translation.UpdateId();
+                translation.UpdateId(); 
             }
 
-            EditorUtility.SetDirty(this);
+            EditorUtility.SetDirty(this); 
             UpdateMap();
         }
 #endif

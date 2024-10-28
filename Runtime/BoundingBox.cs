@@ -21,11 +21,11 @@ namespace SiegeUp.Core
         {
             var rotMatrix = Matrix4x4.Rotate(Quaternion.Euler(0, rotation.eulerAngles.y, 0));
 
-            var topLeft = -size / 2;
-            var bottomRight = size / 2;
+            var topLeft = - (Vector3)size / 2;
+            var bottomRight = (Vector3)size / 2;
 
-            var topLeftRot = rotMatrix * (Vector3) topLeft;
-            var bottomRightRot = rotMatrix * (Vector3) bottomRight;
+            var topLeftRot = rotMatrix * topLeft;
+            var bottomRightRot = rotMatrix * bottomRight;
 
             var newMin = new Vector2(Mathf.Min(topLeftRot.x, bottomRightRot.x), Mathf.Min(topLeftRot.z, bottomRightRot.z));
             var newMax = new Vector2(Mathf.Max(topLeftRot.x, bottomRightRot.x), Mathf.Max(topLeftRot.z, bottomRightRot.z));
