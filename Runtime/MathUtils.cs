@@ -261,11 +261,10 @@ namespace SiegeUp.Core
             return (int)Math.Round(number + adjustment);
         }
 
-        public static List<Vector2> GetPointsAroundBox(Rect rect, float distance, int step)
+        public static List<Vector2> GetPointsAroundBox(Rect rect, float distance, float step)
         {
             List<Vector2> points = new();
             var corner = rect.position - new Vector2(distance, distance);
-            var offset = Vector2.one * (distance - 0.1f);
             for (float x = 0; x < rect.size.x + distance * 2; x += step)
             {
                 for (float y = 0; y < rect.size.y + distance * 2; y += step)
@@ -282,9 +281,9 @@ namespace SiegeUp.Core
             return points;
         }
 
-        public static List<Vector2> SortPointsByDistanceToPoint(List<Vector2> points, Vector2 point)
+        public static List<Vector3> SortPointsByDistanceToPoint(List<Vector3> points, Vector3 point)
         {
-            points.Sort((item1, item2) => (int)((Vector2.Distance(item1, point) - Vector2.Distance(item2, point)) * 100.0f));
+            points.Sort((item1, item2) => (int)((Vector3.Distance(item1, point) - Vector3.Distance(item2, point)) * 100.0f));
             return points;
         }
     }
