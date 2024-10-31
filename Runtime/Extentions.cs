@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.AI;
+using UnityEngine.UIElements;
 
 namespace SiegeUp.Core
 {
@@ -56,6 +58,11 @@ namespace SiegeUp.Core
             return Service<PrefabManager>.Instance.GetPrefab(prefabRef);
         }
 
+        public static List<Vector2> GetXZ(this List<Vector3> vectors)
+        {
+            return vectors.Select(v => v.GetXZ()).ToList();
+        }
+
         public static Vector2 GetXZ(this Vector3 v3)
         {
             return new Vector2(v3.x, v3.z);
@@ -69,6 +76,11 @@ namespace SiegeUp.Core
         public static Vector2Int GetXZ(this Vector3Int v3)
         {
             return new Vector2Int(v3.x, v3.z);
+        }
+
+        public static List<Vector3> GetX0Y(this List<Vector2> vectors)
+        {
+            return vectors.Select(v => new Vector3(v.x, 0, v.y)).ToList();
         }
 
         public static Vector3 GetX0Y(this Vector2 v2)
@@ -109,6 +121,21 @@ namespace SiegeUp.Core
         public static Vector3Int Floor(this Vector3 v)
         {
             return new Vector3Int(Mathf.FloorToInt(v.x), Mathf.FloorToInt(v.y), Mathf.FloorToInt(v.z));
+        }
+
+        public static float Length(this NavMeshPath path)
+        {
+            if (path == null || path.corners == null || path.corners.Length < 2)
+                return 0f;
+
+            var corners = path.corners;
+            var length = 0f;
+
+            for (int i = 1; i < corners.Length; i++)
+            {
+                length += Vector3.Distance(corners[i - 1], corners[i]);
+            }
+            return length;
         }
     }
 }
