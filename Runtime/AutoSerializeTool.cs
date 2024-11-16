@@ -172,7 +172,6 @@ namespace SiegeUp.Core
             public Vector3 size;
         }
 
-
         public const int currentFormatVersion = 3;
 
         static Dictionary<string, ClassReflectionCache> classReflectionCaches = new();
@@ -180,8 +179,6 @@ namespace SiegeUp.Core
         static Dictionary<string, Type> cachedTypesMap = new();
         static Dictionary<string, Type> nestedTypesMapLegacy = new();
         static Dictionary<string, Type> nestedTypesMap = new();
-
-
 
         public static string ExtractId(GameObject targetObject)
         {
@@ -982,7 +979,7 @@ namespace SiegeUp.Core
                         component,
                         component.gameObject.name,
                         null);
-                    var deserialized = AutoSerializeTool.Deserialize(data, dataStructType, context);
+                    var deserialized = Deserialize(data, dataStructType, context);
                     deserializeMethod.Invoke(null, new[] { component, deserialized, restoreProcess });
                 }
                 else
@@ -997,11 +994,12 @@ namespace SiegeUp.Core
                             component,
                             component.gameObject.name,
                             null);
-                        var deserialized = AutoSerializeTool.Deserialize(data, dataStructType, context);
-                        if (dataStructType != null)
+
+                        var deserialized = Deserialize(data, dataStructType, context);
+                        if (deserialized != null)
                         {
                             var deserializeMethod = ReflectionUtils.GetMethod(componentType, "DATA_Deserialize");
-                            deserializeMethod.Invoke(component, new[] { deserialized, restoreProcess });
+                            deserializeMethod?.Invoke(component, new[] { deserialized, restoreProcess });
                         }
                     }
                 }
