@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Xml;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions.Must;
 using UnityEngine.Serialization;
 using static SiegeUp.Core.AutoSerializeTool.ClassReflectionCache;
 
@@ -412,13 +413,28 @@ namespace SiegeUp.Core
             }
             else if (type.IsArray)
             {
-                var array = val as Array;
-                var elementType = type.GetElementType();
-                pos += BinaryUtil.WriteInt32(ref dest, pos, array.Length);
-
-                foreach (var element in array)
+                if (val != null)
                 {
-                    Write(ref dest, ref pos, elementType, element);
+                    var array = val as Array;
+                    var elementType = type.GetElementType();
+                    pos += BinaryUtil.WriteInt32(ref dest, pos, array.Length);
+                    int nullItemPos = pos;
+                    pos += sizeof(int);
+                    for (int i = 0; i < array.Length; i++)
+                    {
+                        var item = array.GetValue(i);
+                        if (item == null)
+                        {
+                            BinaryUtil.WriteInt32(ref dest, nullItemPos, i);
+                            nullItemPos = pos;
+                            pos += sizeof(int);
+                        }
+                        else
+                        {
+                            Write(ref dest, ref pos, elementType, item);
+                        }
+                    }
+                    BinaryUtil.WriteInt32(ref dest, nullItemPos, -1);
                 }
             }
             else if (Array.Find(type.GetInterfaces(), item => item == typeof(IList)) != null)
@@ -664,14 +680,30 @@ namespace SiegeUp.Core
             }
             else if (type.IsArray)
             {
-                var elementType = type.GetElementType();
                 int length = BinaryUtil.ReadInt32(ref source, pos);
                 pos += sizeof(int);
 
+                int nextNullIndex = BinaryUtil.ReadInt32(ref source, pos);
+                pos += sizeof(int);
+
+                var elementType = type.GetElementType();
+
                 Array array = Array.CreateInstance(elementType, length);
+
                 for (int i = 0; i < length; i++)
                 {
-                    array.SetValue(Read(source, ref pos, elementType, context), i);
+                    if (i == nextNullIndex)
+                    {
+                        array.SetValue(null, i);
+
+                        nextNullIndex = BinaryUtil.ReadInt32(ref source, pos);
+                        pos += sizeof(int);
+                    }
+                    else
+                    {
+                        var item = Read(source, ref pos, elementType, context);
+                        array.SetValue(item, i);
+                    }
                 }
                 result = array;
             }
@@ -732,6 +764,10 @@ namespace SiegeUp.Core
                 if (fieldIndex != -1)
                 {
                     var field = cache.fields[fieldIndex];
+
+                    if (field.fieldInfo.Name == "terrainBin")
+                        Debug.Log("terrainBin");
+
                     var value = Read(source, ref pos, field.fieldInfo.FieldType, context);
                     if (value != null && value.GetType() != typeof(object))
                     {
