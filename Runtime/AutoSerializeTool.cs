@@ -764,10 +764,6 @@ namespace SiegeUp.Core
                 if (fieldIndex != -1)
                 {
                     var field = cache.fields[fieldIndex];
-
-                    if (field.fieldInfo.Name == "terrainBin")
-                        Debug.Log("terrainBin");
-
                     var value = Read(source, ref pos, field.fieldInfo.FieldType, context);
                     if (value != null && value.GetType() != typeof(object))
                     {
