@@ -101,7 +101,7 @@ namespace SiegeUp.Core.Tests
             var newTestObj = new TestStruct();
 
             int deserializePos = 0;
-            var objContext = new ObjectContext(null, null, AutoSerializeTool.currentFormatVersion, null, newTestObj, "Test", typeof(TestStruct));
+            var objContext = new ObjectContext(null, null, 1, null, newTestObj, "Test", typeof(TestStruct));
             AutoSerializeTool.ReadObject(ref bytes, ref deserializePos, objContext);
 
             Assert.AreEqual(newTestObj.fieldInt, testObj.fieldInt);

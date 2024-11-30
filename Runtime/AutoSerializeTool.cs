@@ -173,8 +173,6 @@ namespace SiegeUp.Core
             public Vector3 size;
         }
 
-        public const int currentFormatVersion = 3;
-
         static Dictionary<string, ClassReflectionCache> classReflectionCaches = new();
         static Dictionary<string, bool> hasAutoSerializeAttributeMap = new();
         static Dictionary<string, Type> cachedTypesMap = new();
