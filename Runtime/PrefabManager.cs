@@ -46,7 +46,10 @@ namespace SiegeUp.Core
 
         public GameObject GetPrefab(PrefabRef prefabRef)
         {
-            return GetPrefab(prefabRef.GetGuid());
+            if (prefabRef)
+                return GetPrefab(prefabRef.GetGuid());
+            else
+                return null;
         }
 
         void OnEnable()
