@@ -984,11 +984,9 @@ namespace SiegeUp.Core
         public static List<SerializedGameObjectBin> SerializeGameObjects(UniqueId[] uniqueIds)
         {
             var elements = new List<SerializedGameObjectBin>();
+
             foreach (var uniqueId in uniqueIds)
-            {
-                if (uniqueId.transform.parent == null || uniqueId.transform.parent.name != "SceneModels")
-                    elements.Add(SerializeBin(uniqueId.gameObject));
-            }
+                elements.Add(SerializeBin(uniqueId.gameObject));
 
             return elements;
         }
