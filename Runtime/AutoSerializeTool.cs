@@ -1234,7 +1234,6 @@ namespace SiegeUp.Core
             SerializedGameObjectBin serializedObjectBin;
             if (restoreProcess.serializedGameObjectsBin != null && restoreProcess.serializedGameObjectsBin.TryGetValue(id, out serializedObjectBin))
                 return CreateObjectBin(serializedObjectBin, restoreProcess);
-            Debug.LogError($"Can't find or instantiate object {id}");
             return null;
         }
 
