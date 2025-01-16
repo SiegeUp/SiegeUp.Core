@@ -281,10 +281,15 @@ namespace SiegeUp.Core
             return points;
         }
 
-        public static List<Vector3> SortPointsByDistanceToPoint(List<Vector3> points, Vector3 point)
+        public static List<Vector3> SortPointsByDistanceToPoint(List<Vector3> points, Vector3 point, float maxDist = float.MaxValue, int numberOfClosestPoints = int.MaxValue)
         {
-            points.Sort((item1, item2) => (int)((Vector3.Distance(item1, point) - Vector3.Distance(item2, point)) * 100.0f));
-            return points;
+            float maxDistSquared = maxDist * maxDist;
+
+            return points
+                .Where(p => Vector3.SqrMagnitude(p - point) <= maxDistSquared) 
+                .OrderBy(p => Vector3.SqrMagnitude(p - point))              
+                .Take(numberOfClosestPoints)                                 
+                .ToList();                                                  
         }
     }
 }

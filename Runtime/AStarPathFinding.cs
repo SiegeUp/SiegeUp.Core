@@ -4,112 +4,156 @@ using UnityEngine;
 
 public class AStarCell
 {
-    public int X { get; set; }
-    public int Y { get; set; }
-    public float Height { get; set; }
-    public bool IsWalkable { get; set; }
+    public int x;
+    public int y;
+    public float height;
+    public bool isWalkable;
 
-    public float GCost { get; set; } // Стоимость от начала
-    public float HCost { get; set; } // Эвристическая стоимость до конца
-    public AStarCell Parent { get; set; }
-
-    public float FCost
+    public AStarCell(int x, int y, float height, bool isWalkable = true)
     {
-        get { return GCost + HCost; }
-    }
-
-    public AStarCell(int x, int y, float z, bool isWalkable = true)
-    {
-        X = x;
-        Y = y;
-        Height = z;
-        IsWalkable = isWalkable;
-    }
-
-    // Метод для получения соседей (4 направления: вверх, вниз, влево, вправо)
-    public List<AStarCell> GetNeighbors(AStarCell[,] grid)
-    {
-        List<AStarCell> neighbors = new List<AStarCell>();
-
-        int[] dx = { -1, 1, 0, 0 };
-        int[] dy = { 0, 0, -1, 1 };
-
-        for (int i = 0; i < 4; i++)
-        {
-            int newX = X + dx[i];
-            int newY = Y + dy[i];
-
-            if (newX >= 0 && newX < grid.GetLength(0) && newY >= 0 && newY < grid.GetLength(1))
-            {
-                neighbors.Add(grid[newX, newY]);
-            }
-        }
-
-        return neighbors;
+        this.x = x;
+        this.y = y;
+        this.height = height;
+        this.isWalkable = isWalkable;
     }
 }
 
 public class AStarPathFinding
 {
-    private AStarCell[,] grid;
-    private int gridWidth;
-    private int gridHeight;
+    AStarCell[,] grid;
+    int gridWidth;
+    int gridHeight;
+
+    float[,] gCost;         // Массив для хранения GCost
+    float[,] hCost;         // Массив для хранения HCost
+    AStarCell[,] parents;   // Массив для хранения ссылок на родителя
+    bool[,] closedSet;      // Массив для хранения принадлежности клетки к закрытому набору
+
+    List<AStarCell>[] neighbors; // Предкэшированные соседи для каждой клетки
+
+    public AStarCell[,] Grid => grid;
 
     public AStarPathFinding(AStarCell[,] grid)
     {
         this.grid = grid;
         gridWidth = grid.GetLength(0);
         gridHeight = grid.GetLength(1);
+
+        // Инициализируем вспомогательные массивы
+        gCost = new float[gridWidth, gridHeight];
+        hCost = new float[gridWidth, gridHeight];
+        parents = new AStarCell[gridWidth, gridHeight];
+        closedSet = new bool[gridWidth, gridHeight];
+
+        for (int x = 0; x < gridWidth; x++)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                gCost[x, y] = float.MaxValue;
+                hCost[x, y] = float.MaxValue;
+                parents[x, y] = null;
+                closedSet[x, y] = false;
+            }
+        }
+
+        // Кэшируем список соседей для всех клеток
+        CacheNeighbors();
+    }
+
+    private void CacheNeighbors()
+    { 
+        neighbors = new List<AStarCell>[gridWidth * gridHeight];
+
+        for (int x = 0; x < gridWidth; x++)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                int index = x * gridHeight + y; // Одномерный индекс вместо двумерного
+                neighbors[index] = new List<AStarCell>();
+
+                int[] dx = { -1, 1, 0, 0 };
+                int[] dy = { 0, 0, -1, 1 };
+
+                for (int i = 0; i < 4; i++)
+                {
+                    int newX = x + dx[i];
+                    int newY = y + dy[i];
+
+                    if (newX >= 0 && newX < gridWidth && newY >= 0 && newY < gridHeight)
+                    {
+                        neighbors[index].Add(grid[newX, newY]);
+                    }
+                }
+            }
+        }
     }
 
     public List<AStarCell> FindPath(AStarCell startCell, AStarCell endCell)
     {
-        List<AStarCell> openSet = new List<AStarCell>();
-        HashSet<AStarCell> closedSet = new HashSet<AStarCell>();
+        // Очистка вспомогательных данных
+        for (int x = 0; x < gridWidth; x++)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                gCost[x, y] = float.MaxValue;
+                hCost[x, y] = float.MaxValue;
+                parents[x, y] = null;
+                closedSet[x, y] = false;
+            }
+        }
 
+        List<AStarCell> openSet = new List<AStarCell>();
+
+        // Инициализация начальной клетки
+        gCost[startCell.x, startCell.y] = 0;
+        hCost[startCell.x, startCell.y] = GetDistance(startCell, endCell);
         openSet.Add(startCell);
 
         while (openSet.Count > 0)
         {
-            // Выбираем клетку с наименьшим FCost
+            // Находим клетку с наименьшим значением FCost
             AStarCell currentCell = openSet[0];
             for (int i = 1; i < openSet.Count; i++)
             {
-                if (openSet[i].FCost < currentCell.FCost ||
-                   (openSet[i].FCost == currentCell.FCost && openSet[i].HCost < currentCell.HCost))
+                float fCost = gCost[openSet[i].x, openSet[i].y] + hCost[openSet[i].x, openSet[i].y];
+                float currentFCost = gCost[currentCell.x, currentCell.y] + hCost[currentCell.x, currentCell.y];
+
+                if (fCost < currentFCost ||
+                    (fCost == currentFCost && hCost[openSet[i].x, openSet[i].y] < hCost[currentCell.x, currentCell.y]))
                 {
                     currentCell = openSet[i];
                 }
             }
 
             openSet.Remove(currentCell);
-            closedSet.Add(currentCell);
+            closedSet[currentCell.x, currentCell.y] = true;
 
-            // Если достигли цели, восстанавливаем путь
+            // Если достигли конечной клетки, восстанавливаем путь
             if (currentCell == endCell)
             {
                 return RetracePath(startCell, endCell);
             }
 
-            foreach (AStarCell neighbor in currentCell.GetNeighbors(grid))
+            foreach (AStarCell neighbor in neighbors[currentCell.x * gridHeight + currentCell.y])
             {
-                if (!neighbor.IsWalkable || closedSet.Contains(neighbor))
+                if (!neighbor.isWalkable || closedSet[neighbor.x, neighbor.y])
                     continue;
 
-                // Проверяем условие перепада высот
-                if (Mathf.Abs(neighbor.Height - currentCell.Height) > 0.5f)
+                // Условие перепада высот
+                if (Mathf.Abs(neighbor.height - currentCell.height) > 0.5f)
                     continue;
 
-                float tentativeGCost = currentCell.GCost + GetDistance(currentCell, neighbor);
-
-                if (tentativeGCost < neighbor.GCost || !openSet.Contains(neighbor))
+                float tentativeGCost = /*gCost[currentCell.x, currentCell.y] + GetDistance(currentCell, neighbor);*/ 0;
+                if (tentativeGCost < gCost[neighbor.x, neighbor.y])
                 {
-                    neighbor.GCost = tentativeGCost;
-                    neighbor.HCost = GetDistance(neighbor, endCell);
-                    neighbor.Parent = currentCell;
+                    gCost[neighbor.x, neighbor.y] = tentativeGCost;
+                    hCost[neighbor.x, neighbor.y] = GetDistance(neighbor, endCell);
+                    parents[neighbor.x, neighbor.y] = currentCell;
 
                     if (!openSet.Contains(neighbor))
+                    {
                         openSet.Add(neighbor);
+                    }
                 }
             }
         }
@@ -126,7 +170,7 @@ public class AStarPathFinding
         while (currentCell != startCell)
         {
             path.Add(currentCell);
-            currentCell = currentCell.Parent;
+            currentCell = parents[currentCell.x, currentCell.y];
         }
         path.Add(startCell);
         path.Reverse();
@@ -135,7 +179,7 @@ public class AStarPathFinding
 
     private float GetDistance(AStarCell a, AStarCell b)
     {
-        // Используем манхэттенское расстояние
-        return Mathf.Abs(a.X - b.X) + Mathf.Abs(a.Y - b.Y);
+        // Манхэттенское расстояние
+        return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
     }
 }
