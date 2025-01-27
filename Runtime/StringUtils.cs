@@ -33,7 +33,8 @@ public static class StringUtils
             { KeyCode.RightAlt, "Alt" },
             { KeyCode.Escape, "Esc" },
             { KeyCode.Return, "Enter" },
-            { KeyCode.Backspace, "Backspace" }
+            { KeyCode.Backspace, "Backspace" },
+            { KeyCode.Delete, "Del" }
         };
 
         if (keyCodes[0] == KeyCode.None)
