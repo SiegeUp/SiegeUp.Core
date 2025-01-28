@@ -34,7 +34,17 @@ public static class StringUtils
             { KeyCode.Escape, "Esc" },
             { KeyCode.Return, "Enter" },
             { KeyCode.Backspace, "Backspace" },
-            { KeyCode.Delete, "Del" }
+            { KeyCode.Delete, "Del" },
+            { KeyCode.Alpha0, "0" },
+            { KeyCode.Alpha1, "1" },
+            { KeyCode.Alpha2, "2" },
+            { KeyCode.Alpha3, "3" },
+            { KeyCode.Alpha4, "4" },
+            { KeyCode.Alpha5, "5" },
+            { KeyCode.Alpha6, "6" },
+            { KeyCode.Alpha7, "7" },
+            { KeyCode.Alpha8, "8" },
+            { KeyCode.Alpha9, "9" },
         };
 
         if (keyCodes[0] == KeyCode.None)
