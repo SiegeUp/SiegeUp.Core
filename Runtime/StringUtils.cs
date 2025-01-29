@@ -45,6 +45,22 @@ public static class StringUtils
             { KeyCode.Alpha7, "7" },
             { KeyCode.Alpha8, "8" },
             { KeyCode.Alpha9, "9" },
+            { KeyCode.Keypad0, "Num 0" },
+            { KeyCode.Keypad1, "Num 1" },
+            { KeyCode.Keypad2, "Num 2" },
+            { KeyCode.Keypad3, "Num 3" },
+            { KeyCode.Keypad4, "Num 4" },
+            { KeyCode.Keypad5, "Num 5" },
+            { KeyCode.Keypad6, "Num 6" },
+            { KeyCode.Keypad7, "Num 7" },
+            { KeyCode.Keypad8, "Num 8" },
+            { KeyCode.Keypad9, "Num 9" },
+            { KeyCode.KeypadDivide, "Num /" },
+            { KeyCode.KeypadMultiply, "Num *" },
+            { KeyCode.KeypadEnter, "Num Enter" },
+            { KeyCode.KeypadMinus, "Num -/" },
+            { KeyCode.KeypadPlus, "Num +/" },
+            { KeyCode.Mouse2, "Mouse middle" },
         };
 
         if (keyCodes[0] == KeyCode.None)
