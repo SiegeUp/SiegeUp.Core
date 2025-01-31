@@ -9,6 +9,12 @@ namespace SiegeUp.Core
 {
     public static class MathUtils
     {
+        public static float[] angles = { 0, 90, 180, 270 };
+
+        public static Vector2Int[] allSides = { new(0, 1), new(1, 0), new(0, -1), new(-1, 0), new(1, 1), new(1, -1), new(-1, -1), new(-1, 1) };
+        public static Vector2Int[] fourSides = { new(0, 1), new(1, 0), new(0, -1), new(-1, 0) };
+        public static Vector2Int[] inCorners = { new(1, 1), new(1, -1), new(-1, -1), new(-1, 1) };
+
         public enum CompareOperation
         {
             More = 1,
