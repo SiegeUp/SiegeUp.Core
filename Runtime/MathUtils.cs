@@ -308,5 +308,26 @@ namespace SiegeUp.Core
 
             return Math.Abs(num - lower) <= Math.Abs(num - upper) ? lower : upper;
         }
+
+        public static Vector3 GetRayIntersectionWithPlane(Ray ray, Vector3 planeNormal, Vector3 planePoint)
+        {
+            float denominator = Vector3.Dot(planeNormal, ray.direction);
+            if (Mathf.Abs(denominator) < Mathf.Epsilon)
+            {
+                return Vector3.zero;
+            }
+
+            float t = Vector3.Dot(planePoint - ray.origin, planeNormal) / denominator;
+            return ray.origin + t * ray.direction;
+        }
+
+        public static Vector3 ClampVector(Vector3 value, Vector3 min, Vector3 max)
+        {
+            return new Vector3(
+                Mathf.Clamp(value.x, min.x, max.x),
+                Mathf.Clamp(value.y, min.y, max.y),
+                Mathf.Clamp(value.z, min.z, max.z)
+            );
+        }
     }
 }
