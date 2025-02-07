@@ -297,5 +297,16 @@ namespace SiegeUp.Core
                 .Take(numberOfClosestPoints)                                 
                 .ToList();                                                  
         }
+
+        public static int GetNearestDivisible(int num, int divisor)
+        {
+            if (divisor == 0)
+                throw new ArgumentException("Divisor can't be 0!");
+
+            int lower = num - (num % divisor);
+            int upper = lower + (num % divisor == 0 ? 0 : divisor);
+
+            return Math.Abs(num - lower) <= Math.Abs(num - upper) ? lower : upper;
+        }
     }
 }
