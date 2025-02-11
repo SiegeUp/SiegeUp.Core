@@ -12,8 +12,10 @@ namespace SiegeUp.Core
         [SerializeField]
         List<ScriptableObjectWithId> initialList;
 
+        Dictionary<string, ScriptableObjectWithId> runtimeScriptableObjectsMap = new();
         Dictionary<string, ScriptableObjectWithId> scriptableObjectsMap = new();
         public IEnumerable<ScriptableObjectWithId> AllScriptableObjects => scriptableObjectsMap.Values;
+        public IEnumerable<ScriptableObjectWithId> RuntimeScriptableObjectsMap => runtimeScriptableObjectsMap.Values;
 
         void OnEnable()
         {
@@ -27,7 +29,13 @@ namespace SiegeUp.Core
 
         public ScriptableObject GetScriptableObject(string id)
         {
-            return !scriptableObjectsMap.TryGetValue(id, out var result) ? null : result;
+            if (scriptableObjectsMap.TryGetValue(id, out var result))
+                return result;
+
+            if (runtimeScriptableObjectsMap.TryGetValue(id, out result))
+                return result;
+
+            return null;
         }
 
         [ContextMenu("Update Map")]
@@ -77,5 +85,19 @@ namespace SiegeUp.Core
             UpdateMap();
         }
 #endif
+        public void AddRuntimeScriptableObjects(List<ScriptableObjectWithId> scriptableObjects)
+        {
+            foreach (var scriptableObject in scriptableObjects)
+            {
+                if (!runtimeScriptableObjectsMap.ContainsKey(scriptableObject.Id) && !scriptableObjectsMap.ContainsKey(scriptableObject.Id))
+                    runtimeScriptableObjectsMap.Add(scriptableObject.Id, scriptableObject);
+            }
+        }
+
+        public void RemoveRuntimeScriptableObjects(List<ScriptableObjectWithId> scriptableObjects)
+        {
+            foreach (var scriptableObject in scriptableObjects)
+                runtimeScriptableObjectsMap.Remove(scriptableObject.Id);
+        }
     }
 }
