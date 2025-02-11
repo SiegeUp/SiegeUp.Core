@@ -298,15 +298,23 @@ namespace SiegeUp.Core
                 .ToList();                                                  
         }
 
-        public static int GetNearestDivisible(int num, int divisor)
+        public static float GetNearestDivisible(float num, float divisor)
         {
             if (divisor == 0)
                 throw new ArgumentException("Divisor can't be 0!");
 
-            int lower = num - (num % divisor);
-            int upper = lower + (num % divisor == 0 ? 0 : divisor);
+            float lower = num - (num % divisor);
+            float upper = lower + (num % divisor == 0 ? 0 : divisor);
 
             return Math.Abs(num - lower) <= Math.Abs(num - upper) ? lower : upper;
+        }
+
+        public static float GetNearestNumberWithFraction(float target, float fraction)
+        {
+            float floor = Mathf.Floor(target) + fraction;
+            float ceil = Mathf.Ceil(target) + fraction;
+
+            return Math.Abs(target - floor) <= Math.Abs(target - ceil) ? floor : ceil;
         }
 
         public static Vector3 GetRayIntersectionWithPlane(Ray ray, Vector3 planeNormal, Vector3 planePoint)
