@@ -144,6 +144,9 @@ namespace SiegeUp.Core
                 return string.Empty;
 
             string original = obj.ToString();
+            if (!original.Contains("("))
+                return original;
+
             int index = original.LastIndexOf('(');
             string namePart = index >= 0 ? original.Substring(0, index).Trim() : original;
             string typeName = obj.GetType().Name;
