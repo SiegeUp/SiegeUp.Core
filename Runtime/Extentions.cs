@@ -137,5 +137,17 @@ namespace SiegeUp.Core
             }
             return length;
         }
+
+        public static string ToShortString(this object obj)
+        {
+            if (obj == null)
+                return string.Empty;
+
+            string original = obj.ToString();
+            int index = original.LastIndexOf('(');
+            string namePart = index >= 0 ? original.Substring(0, index).Trim() : original;
+            string typeName = obj.GetType().Name;
+            return $"{namePart} ({typeName})";
+        }
     }
 }
