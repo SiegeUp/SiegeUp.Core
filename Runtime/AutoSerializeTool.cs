@@ -523,221 +523,283 @@ namespace SiegeUp.Core
 
         public static unsafe object Read(byte[] source, ref int pos, Type type, ObjectContext context)
         {
-            object result = null;
-
             if (type.IsSubclassOf(typeof(Component)) || type.IsAssignableFrom(typeof(Transform)))
             {
-                if (type == typeof(PrefabRef))
-                {
-                    var guid = BinaryUtil.ReadGuid(ref source, pos);
-                    pos += sizeof(Guid);
-                    if (guid != Guid.Empty)
-                    {
-                        var prefabObj = context.prefabManager.GetPrefab(guid);
-                        if (prefabObj)
-                            result = prefabObj.GetComponent<PrefabRef>();
-                        else
-                            Debug.LogError($"Prefab is not found {guid}");
-                    }
-                }
-                else
-                {
-                    var guid = BinaryUtil.ReadGuid(ref source, pos);
-                    pos += sizeof(Guid);
-                    if (guid != Guid.Empty)
-                    {
-                        var obj = context.findObjectById(guid);
-                        result = obj?.GetComponent(type);
-                    }
-                }
+                return ReadComponent(source, ref pos, type, context);
             }
             else if (typeof(ScriptableObjectWithId).IsAssignableFrom(type))
             {
-                var str = Read(source, ref pos, typeof(string), context) as string;
-                result = context.scriptableObjectManager.GetScriptableObject(str);
+                return ReadScriptableObject(source, ref pos, context);
             }
-            else if (type.IsAssignableFrom(typeof(GameObject)))
+            else if (typeof(GameObject).IsAssignableFrom(type))
             {
-                var guid = BinaryUtil.ReadGuid(ref source, pos);
-                pos += sizeof(Guid);
-                if (guid != Guid.Empty)
-                {
-                    var obj = context.findObjectById(guid);
-                    result = obj;
-                }
+                return ReadGameObject(source, ref pos, context);
             }
             else if (type.IsValueType)
             {
-                if (type == typeof(float))
-                {
-                    result = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                }
-                else if (type.IsEnum || type == typeof(int))
-                {
-                    result = BinaryUtil.ReadInt32(ref source, pos);
-                    pos += sizeof(int);
-                }
-                else if (type == typeof(long))
-                {
-                    result = BinaryUtil.ReadInt64(ref source, pos);
-                    pos += sizeof(long);
-                }
-                else if (type == typeof(short))
-                {
-                    result = BinaryUtil.ReadInt16(ref source, pos);
-                    pos += sizeof(short);
-                }
-                else if (type == typeof(byte))
-                {
-                    result = BinaryUtil.ReadByte(ref source, pos);
-                    pos += sizeof(byte);
-                }
-                else if (type == typeof(bool))
-                {
-                    result = BinaryUtil.ReadBoolean(ref source, pos);
-                    pos += sizeof(bool);
-                }
-                else if (type == typeof(Guid))
-                {
-                    var guid = BinaryUtil.ReadGuid(ref source, pos);
-                    pos += sizeof(Guid);
-                    result = guid;
-                }
-                else if (type.IsAssignableFrom(typeof(Bounds)))
-                {
-                    float x = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    float y = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    float z = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    float sX = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    float sY = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    float sZ = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    result = new Bounds(new Vector3(x, y, z), new Vector3(sX, sY, sZ));
-                }
-                else if (type.IsAssignableFrom(typeof(Vector2Int)))
-                {
-                    int x = BinaryUtil.ReadInt32(ref source, pos);
-                    pos += sizeof(int);
-                    int y = BinaryUtil.ReadInt32(ref source, pos);
-                    pos += sizeof(int);
-                    result = new Vector2Int(x, y);
-                }
-                else if (type.IsAssignableFrom(typeof(Vector3)))
-                {
-                    float x = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    float y = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    float z = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    result = new Vector3(x, y, z);
-                }
-                else if (type.IsAssignableFrom(typeof(Quaternion)))
-                {
-                    float x = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    float y = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    float z = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    float w = BinaryUtil.ReadSingle(ref source, pos);
-                    pos += sizeof(float);
-                    result = new Quaternion(x, y, z, w);
-                }
-                else if (!type.IsPrimitive) // struct
-                {
-                    object instance = Activator.CreateInstance(type);
-                    var nestedContext = new ObjectContext(context, instance, type);
-                    ReadObject(ref source, ref pos, nestedContext);
-                    result = instance;
-                }
-                else
-                {
-                    Debug.LogError("Can't deserialize, unknown type " + type.Name);
-                }
+                return ReadValueType(source, ref pos, type, context);
             }
             else if (type == typeof(string))
             {
-                int length = BinaryUtil.ReadInt32(ref source, pos);
-                pos += sizeof(int);
-                result = BinaryUtil.ReadString(ref source, pos, length);
-                pos += length;
+                return ReadString(source, ref pos);
             }
             else if (type == typeof(byte[]))
             {
-                int length = BinaryUtil.ReadInt32(ref source, pos);
-                pos += sizeof(int);
-                result = BinaryUtil.ReadBytes(ref source, pos, length);
-                pos += length;
+                return ReadByteArray(source, ref pos);
             }
             else if (type.IsArray)
             {
-                int length = BinaryUtil.ReadInt32(ref source, pos);
-                pos += sizeof(int);
-
-                int nextNullIndex = BinaryUtil.ReadInt32(ref source, pos);
-                pos += sizeof(int);
-
-                var elementType = type.GetElementType();
-
-                Array array = Array.CreateInstance(elementType, length);
-
-                for (int i = 0; i < length; i++)
-                {
-                    if (i == nextNullIndex)
-                    {
-                        array.SetValue(null, i);
-
-                        nextNullIndex = BinaryUtil.ReadInt32(ref source, pos);
-                        pos += sizeof(int);
-                    }
-                    else
-                    {
-                        var item = Read(source, ref pos, elementType, context);
-                        array.SetValue(item, i);
-                    }
-                }
-                result = array;
+                return ReadArray(source, ref pos, type, context);
             }
-            else if (Array.Find(type.GetInterfaces(), item => item == typeof(IList)) != null)
+            else if (typeof(IList).IsAssignableFrom(type))
             {
-                int length = BinaryUtil.ReadInt32(ref source, pos);
-                pos += sizeof(int);
-                int nextNullIndex = BinaryUtil.ReadInt32(ref source, pos);
-                pos += sizeof(int);
-                IList instance = Activator.CreateInstance(type) as IList;
-                for (int i = 0; i < length; i++)
-                {
-                    if (i == nextNullIndex)
-                    {
-                        instance.Add(null);
-                        nextNullIndex = BinaryUtil.ReadInt32(ref source, pos);
-                        pos += sizeof(int);
-                    }
-                    else
-                    {
-                        var item = Read(source, ref pos, type.GenericTypeArguments[0], context);
-                        instance.Add(item);
-                    }
-                }
-
-                result = instance;
+                return ReadList(source, ref pos, type, context);
             }
             else if (type.IsClass)
+            {
+                return ReadClass(source, ref pos, type, context);
+            }
+            else
+            {
+                Debug.LogError("Can't deserialize, unknown type " + type.Name);
+                return null;
+            }
+        }
+
+        private static void EnsureAvailable(byte[] source, int pos, int size)
+        {
+            if (source == null || pos < 0 || pos + size > source.Length)
+            {
+                throw new IndexOutOfRangeException("Buffer overrun: trying to read beyond available data.");
+            }
+        }
+
+        private static Guid ReadGuidSafe(byte[] source, ref int pos)
+        {
+            const int guidSize = 16;
+            EnsureAvailable(source, pos, guidSize);
+            Guid guid = BinaryUtil.ReadGuid(ref source, pos);
+            pos += guidSize;
+            return guid;
+        }
+
+        private static unsafe object ReadComponent(byte[] source, ref int pos, Type type, ObjectContext context)
+        {
+            object result = null;
+            Guid guid = ReadGuidSafe(source, ref pos);
+            if (guid != Guid.Empty)
+            {
+                if (type == typeof(PrefabRef))
+                {
+                    var prefabObj = context.prefabManager.GetPrefab(guid);
+                    if (prefabObj)
+                        result = prefabObj.GetComponent<PrefabRef>();
+                    else
+                        Debug.LogError($"Prefab is not found {guid}");
+                }
+                else
+                {
+                    var obj = context.findObjectById(guid);
+                    if (obj != null)
+                        result = obj.GetComponent(type);
+                    else
+                        Debug.LogWarning($"Object with GUID {guid} not found.");
+                }
+            }
+            return result;
+        }
+
+        private static unsafe object ReadScriptableObject(byte[] source, ref int pos, ObjectContext context)
+        {
+            string str = Read(source, ref pos, typeof(string), context) as string;
+            return context.scriptableObjectManager.GetScriptableObject(str);
+        }
+
+        private static unsafe object ReadGameObject(byte[] source, ref int pos, ObjectContext context)
+        {
+            Guid guid = ReadGuidSafe(source, ref pos);
+            if (guid != Guid.Empty)
+            {
+                return context.findObjectById(guid);
+            }
+            return null;
+        }
+
+        private static unsafe object ReadValueType(byte[] source, ref int pos, Type type, ObjectContext context)
+        {
+            object result = null;
+            if (type == typeof(float))
+            {
+                EnsureAvailable(source, pos, sizeof(float));
+                result = BinaryUtil.ReadSingle(ref source, pos);
+                pos += sizeof(float);
+            }
+            else if (type.IsEnum || type == typeof(int))
+            {
+                EnsureAvailable(source, pos, sizeof(int));
+                result = BinaryUtil.ReadInt32(ref source, pos);
+                pos += sizeof(int);
+            }
+            else if (type == typeof(long))
+            {
+                EnsureAvailable(source, pos, sizeof(long));
+                result = BinaryUtil.ReadInt64(ref source, pos);
+                pos += sizeof(long);
+            }
+            else if (type == typeof(short))
+            {
+                EnsureAvailable(source, pos, sizeof(short));
+                result = BinaryUtil.ReadInt16(ref source, pos);
+                pos += sizeof(short);
+            }
+            else if (type == typeof(byte))
+            {
+                EnsureAvailable(source, pos, sizeof(byte));
+                result = BinaryUtil.ReadByte(ref source, pos);
+                pos += sizeof(byte);
+            }
+            else if (type == typeof(bool))
+            {
+                EnsureAvailable(source, pos, sizeof(bool));
+                result = BinaryUtil.ReadBoolean(ref source, pos);
+                pos += sizeof(bool);
+            }
+            else if (type == typeof(Guid))
+            {
+                result = ReadGuidSafe(source, ref pos);
+            }
+            else if (typeof(Bounds).IsAssignableFrom(type))
+            {
+                EnsureAvailable(source, pos, sizeof(float) * 6);
+                float x = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                float y = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                float z = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                float sX = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                float sY = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                float sZ = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                result = new Bounds(new Vector3(x, y, z), new Vector3(sX, sY, sZ));
+            }
+            else if (typeof(Vector2Int).IsAssignableFrom(type))
+            {
+                EnsureAvailable(source, pos, sizeof(int) * 2);
+                int x = BinaryUtil.ReadInt32(ref source, pos); pos += sizeof(int);
+                int y = BinaryUtil.ReadInt32(ref source, pos); pos += sizeof(int);
+                result = new Vector2Int(x, y);
+            }
+            else if (typeof(Vector3).IsAssignableFrom(type))
+            {
+                EnsureAvailable(source, pos, sizeof(float) * 3);
+                float x = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                float y = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                float z = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                result = new Vector3(x, y, z);
+            }
+            else if (typeof(Quaternion).IsAssignableFrom(type))
+            {
+                EnsureAvailable(source, pos, sizeof(float) * 4);
+                float x = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                float y = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                float z = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                float w = BinaryUtil.ReadSingle(ref source, pos); pos += sizeof(float);
+                result = new Quaternion(x, y, z, w);
+            }
+            else if (!type.IsPrimitive)
             {
                 object instance = Activator.CreateInstance(type);
                 var nestedContext = new ObjectContext(context, instance, type);
                 ReadObject(ref source, ref pos, nestedContext);
                 result = instance;
             }
-
+            else
+            {
+                Debug.LogError("Can't deserialize, unknown value type " + type.Name);
+            }
             return result;
+        }
+
+        private static unsafe object ReadString(byte[] source, ref int pos)
+        {
+            EnsureAvailable(source, pos, sizeof(int));
+            int length = BinaryUtil.ReadInt32(ref source, pos);
+            pos += sizeof(int);
+            EnsureAvailable(source, pos, length);
+            var str = BinaryUtil.ReadString(ref source, pos, length);
+            pos += length;
+            return str;
+        }
+
+        private static unsafe object ReadByteArray(byte[] source, ref int pos)
+        {
+            EnsureAvailable(source, pos, sizeof(int));
+            int length = BinaryUtil.ReadInt32(ref source, pos);
+            pos += sizeof(int);
+            EnsureAvailable(source, pos, length);
+            var bytes = BinaryUtil.ReadBytes(ref source, pos, length);
+            pos += length;
+            return bytes;
+        }
+
+        private static unsafe object ReadArray(byte[] source, ref int pos, Type type, ObjectContext context)
+        {
+            EnsureAvailable(source, pos, sizeof(int));
+            int length = BinaryUtil.ReadInt32(ref source, pos);
+            pos += sizeof(int);
+            EnsureAvailable(source, pos, sizeof(int));
+            int nextNullIndex = BinaryUtil.ReadInt32(ref source, pos);
+            pos += sizeof(int);
+            var elementType = type.GetElementType();
+            Array array = Array.CreateInstance(elementType, length);
+            for (int i = 0; i < length; i++)
+            {
+                if (i == nextNullIndex)
+                {
+                    array.SetValue(null, i);
+                    EnsureAvailable(source, pos, sizeof(int));
+                    nextNullIndex = BinaryUtil.ReadInt32(ref source, pos);
+                    pos += sizeof(int);
+                }
+                else
+                {
+                    var item = Read(source, ref pos, elementType, context);
+                    array.SetValue(item, i);
+                }
+            }
+            return array;
+        }
+
+        private static unsafe object ReadList(byte[] source, ref int pos, Type type, ObjectContext context)
+        {
+            EnsureAvailable(source, pos, sizeof(int));
+            int length = BinaryUtil.ReadInt32(ref source, pos);
+            pos += sizeof(int);
+            EnsureAvailable(source, pos, sizeof(int));
+            int nextNullIndex = BinaryUtil.ReadInt32(ref source, pos);
+            pos += sizeof(int);
+            IList instance = Activator.CreateInstance(type) as IList;
+            for (int i = 0; i < length; i++)
+            {
+                if (i == nextNullIndex)
+                {
+                    instance.Add(null);
+                    EnsureAvailable(source, pos, sizeof(int));
+                    nextNullIndex = BinaryUtil.ReadInt32(ref source, pos);
+                    pos += sizeof(int);
+                }
+                else
+                {
+                    var item = Read(source, ref pos, type.GenericTypeArguments[0], context);
+                    instance.Add(item);
+                }
+            }
+            return instance;
+        }
+
+        private static unsafe object ReadClass(byte[] source, ref int pos, Type type, ObjectContext context)
+        {
+            object instance = Activator.CreateInstance(type);
+            var nestedContext = new ObjectContext(context, instance, type);
+            ReadObject(ref source, ref pos, nestedContext);
+            return instance;
         }
 
         public static object Deserialize(byte[] bytes, Type type, ObjectContext context)
