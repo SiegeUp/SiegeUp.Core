@@ -869,7 +869,7 @@ namespace SiegeUp.Core
             var prefabRef = targetObject.GetComponent<PrefabRef>();
             if (prefabRef != null)
             {
-                serializedGameObject.prefabRef = Service<PrefabManager>.Instance.GetPrefab(prefabRef).GetComponent<PrefabRef>();
+                serializedGameObject.prefabRef = Service<PrefabManager>.instance.GetPrefab(prefabRef).GetComponent<PrefabRef>();
                 serializedGameObject.name = null;
             }
             else
@@ -1062,8 +1062,8 @@ namespace SiegeUp.Core
                 {
                     var dataStructType = deserializeClass.GetNestedType("DATA");
                     var deserializeMethod = deserializeClass.GetMethod("DATA_Deserialize");
-                    var context = new ObjectContext(Service<PrefabManager>.Instance,
-                        Service<ScriptableObjectManager>.Instance,
+                    var context = new ObjectContext(Service<PrefabManager>.instance,
+                        Service<ScriptableObjectManager>.instance,
                         restoreProcess.formatVersion,
                         id => FindObjectById(id, restoreProcess),
                         component,
@@ -1077,8 +1077,8 @@ namespace SiegeUp.Core
                     var dataStructType = GetNestedTypeCached(componentType);
                     if (dataStructType != null)
                     {
-                        var context = new ObjectContext(Service<PrefabManager>.Instance,
-                            Service<ScriptableObjectManager>.Instance,
+                        var context = new ObjectContext(Service<PrefabManager>.instance,
+                            Service<ScriptableObjectManager>.instance,
                             restoreProcess.formatVersion,
                             id => FindObjectById(id, restoreProcess),
                             component,
@@ -1125,8 +1125,8 @@ namespace SiegeUp.Core
                     if (componentId != -1 && serializedComponent.id == componentId)
                     {
                         var context = new ObjectContext(
-                            Service<PrefabManager>.Instance,
-                            Service<ScriptableObjectManager>.Instance,
+                            Service<PrefabManager>.instance,
+                            Service<ScriptableObjectManager>.instance,
                             restoreProcess.formatVersion,
                             id => FindObjectById(id, restoreProcess),
                             component,
@@ -1181,7 +1181,7 @@ namespace SiegeUp.Core
 
             GameObject prefab = null;
             if (element.prefabRef != null)
-                prefab = Service<PrefabManager>.Instance.GetPrefab(element.prefabRef);
+                prefab = Service<PrefabManager>.instance.GetPrefab(element.prefabRef);
             if (prefab != null && restoreProcess.bounds != default && !restoreProcess.bounds.Contains(targetObjectPos))
             {
                 Debug.LogError($"Object is out of world bounds {restoreProcess.bounds}. Discard. Obj: {element.name} Pos: {targetObjectPos}");

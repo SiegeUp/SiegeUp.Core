@@ -39,7 +39,7 @@ namespace SiegeUp.Core
                 throw new Exception($"No such field {id} in {ReflectionUtils.GetComponentById(id)}");
 
             var field = autoSerialize.fields[index];
-            var objectContext = new ObjectContext(Service<PrefabManager>.Instance, Service<ScriptableObjectManager>.Instance, formatVersion, null, null, null, null);
+            var objectContext = new ObjectContext(Service<PrefabManager>.instance, Service<ScriptableObjectManager>.instance, formatVersion, null, null, null, null);
             var deserialized = AutoSerializeTool.Deserialize(field.data, typeof(T), objectContext);
 
             return (T)deserialized;

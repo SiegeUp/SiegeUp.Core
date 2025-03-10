@@ -61,7 +61,7 @@ namespace SiegeUp.Core
                     Debug.LogError($"Object duplicate. New: {serializedObject.name} Old: {serializedGameObjectsBin[serializedObject.id].name}");
                     if (serializedObject.prefabRef != default)
                     {
-                        var prefab = Service<PrefabManager>.Instance.GetPrefab(serializedObject.prefabRef);
+                        var prefab = Service<PrefabManager>.instance.GetPrefab(serializedObject.prefabRef);
                         Debug.LogError($"Object duplicate. Prefab: {prefab.name}");
                     }
 

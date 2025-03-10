@@ -55,7 +55,7 @@ namespace SiegeUp.Core
 
         public static GameObject GetOriginalObject(this PrefabRef prefabRef)
         {
-            return Service<PrefabManager>.Instance.GetPrefab(prefabRef);
+            return Service<PrefabManager>.instance.GetPrefab(prefabRef);
         }
 
         public static List<Vector2> GetXZ(this List<Vector3> vectors)

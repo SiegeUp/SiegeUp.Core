@@ -6,19 +6,18 @@ namespace SiegeUp.Core
     [DebuggerStepThrough]
     public static class Service<T> where T : Object
     {
-        static T instance;
-        public static T Instance { get => instance.NullCheck(); private set => instance = value; }
+        public static T instance;
 
-        public static void RegisterInstance(T instance)
+        public static void RegisterInstance(T newInstance)
         {
-            Instance = instance;
+            instance = newInstance;
         }
 
-        public static void RegisterInstanceForEditor(T instance)
+        public static void RegisterInstanceForEditor(T newInstance)
         {
 #if UNITY_EDITOR
             if (!Application.isPlaying)
-                Instance = instance;
+                instance = newInstance;
 #endif
         }
     }
