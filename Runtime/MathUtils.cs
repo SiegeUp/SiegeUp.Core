@@ -211,6 +211,11 @@ namespace SiegeUp.Core
             return float.IsInfinity(pos.x) || float.IsInfinity(pos.y) || float.IsInfinity(pos.z);
         }
 
+        public static Vector3Int RoundToVector3Int(Vector3 point)
+        {
+            return new Vector3Int(RoundFloatToInt(point.x), RoundFloatToInt(point.y), RoundFloatToInt(point.z));
+        }
+
         public static Vector2Int RoundToVector2Int(Vector2 point)
         {
             return new Vector2Int(RoundFloatToInt(point.x), RoundFloatToInt(point.y));
