@@ -342,5 +342,13 @@ namespace SiegeUp.Core
                 Mathf.Clamp(value.z, min.z, max.z)
             );
         }
+
+        public static RectInt GetSubrect(int x, int y, int subRectSideLength, int originRectSizeX, int originrectSizeY)
+        {
+            return new RectInt(x * subRectSideLength,
+                               y * subRectSideLength,
+                               Mathf.Min(originRectSizeX - x * subRectSideLength, subRectSideLength),
+                               Mathf.Min(originrectSizeY - y * subRectSideLength, subRectSideLength));
+        }
     }
 }
