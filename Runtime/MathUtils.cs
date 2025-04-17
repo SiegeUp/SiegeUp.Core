@@ -350,5 +350,40 @@ namespace SiegeUp.Core
                                Mathf.Min(originRectSizeX - x * subRectSideLength, subRectSideLength),
                                Mathf.Min(originrectSizeY - y * subRectSideLength, subRectSideLength));
         }
+
+        public static RectInt GetBoundingRect(List<Vector2Int> points, int padding)
+        {
+            if (padding < 0)
+                padding = 0;
+
+            if (points == null || points.Count == 0)
+            {
+                return new RectInt(0, 0, 0, 0);
+            }
+
+            int minX = points[0].x;
+            int minY = points[0].y;
+            int maxX = points[0].x;
+            int maxY = points[0].y;
+
+            foreach (var p in points)
+            {
+                if (p.x < minX) minX = p.x;
+                if (p.y < minY) minY = p.y;
+                if (p.x > maxX) maxX = p.x;
+                if (p.y > maxY) maxY = p.y;
+            }
+
+            int rawWidth = maxX - minX;
+            int rawHeight = maxY - minY;
+
+            int x = minX - padding;
+            int y = minY - padding;
+
+            int width = rawWidth + 2 * padding;
+            int height = rawHeight + 2 * padding;
+
+            return new RectInt(x, y, width, height);
+        }
     }
 }
