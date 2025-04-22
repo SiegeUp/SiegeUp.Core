@@ -41,10 +41,5 @@ namespace SiegeUp.Core
             result.y = 0;
             return result;
         }
-
-        float SnapValue(float value, float snapStep)
-        {
-            return Mathf.Ceil(value / snapStep) * snapStep;
-        }
     }
 }
