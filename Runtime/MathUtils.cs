@@ -385,5 +385,16 @@ namespace SiegeUp.Core
 
             return new RectInt(x, y, width, height);
         }
+
+        public static RectInt ClampRect(RectInt rect, RectInt bounds)
+        {
+            int xMin = Mathf.Max(rect.xMin, bounds.xMin);
+            int yMin = Mathf.Max(rect.yMin, bounds.yMin);
+            int xMax = Mathf.Min(rect.xMax, bounds.xMax);
+            int yMax = Mathf.Min(rect.yMax, bounds.yMax);
+            int width = Mathf.Max(0, xMax - xMin);
+            int height = Mathf.Max(0, yMax - yMin);
+            return new RectInt(xMin, yMin, width, height);
+        }
     }
 }
