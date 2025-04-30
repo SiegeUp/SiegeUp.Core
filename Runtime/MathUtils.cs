@@ -334,6 +334,14 @@ namespace SiegeUp.Core
             return ray.origin + t * ray.direction;
         }
 
+        public static Vector2Int ClampVector(Vector2Int value, Vector2Int min, Vector2Int max)
+        {
+            return new Vector2Int(
+                Mathf.Clamp(value.x, min.x, max.x),
+                Mathf.Clamp(value.y, min.y, max.y)
+            );
+        }
+
         public static Vector3 ClampVector(Vector3 value, Vector3 min, Vector3 max)
         {
             return new Vector3(
