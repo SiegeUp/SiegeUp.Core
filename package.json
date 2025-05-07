@@ -7,6 +7,6 @@
   "license": "Abuksigun SiegeUp",
   "type": "visible",
   "dependencies": {
-    "com.unity.nuget.newtonsoft-json": ""
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
   }
 }
