@@ -1,6 +1,6 @@
-using UnityEngine;
 using System.Collections.Generic;
 using System.Text;
+using UnityEngine;
 
 
 namespace SiegeUp.Core
@@ -12,7 +12,7 @@ namespace SiegeUp.Core
         string Reference { get; }
     }
 
-    public class BaseGeneratedContent : ScriptableObjectWithId, IReferenceable
+    public class BaseAIGeneratedContent : ScriptableObjectWithId, IReferenceable
     {
         [SerializeField, TextArea(10, 10)] public string prompt;
         [SerializeField, HideInInspector] string lastJson;
@@ -31,6 +31,7 @@ namespace SiegeUp.Core
         public string Reference => $"{lastJson}";
         public string Name => name;
         string IReferenceable.Id => Id;
+
         public virtual string GetPrompt()
         {
             StringBuilder accumulatedPrompt = new();
@@ -40,6 +41,7 @@ namespace SiegeUp.Core
                 var referenceable = item as IReferenceable ?? (item as GameObject)?.GetComponent<IReferenceable>();
                 if (referenceable != null)
                 {
+                    accumulatedPrompt.AppendLine($"{referenceable.Name}:");
                     accumulatedPrompt.AppendLine($"{referenceable.Reference}");
                 }
             }
@@ -47,6 +49,7 @@ namespace SiegeUp.Core
             accumulatedPrompt.AppendLine(prompt);
             return accumulatedPrompt.ToString();
         }
+
         public virtual void Deserialize(string json) { }
         public virtual string Serialize() { return "{}"; }
 
@@ -56,19 +59,20 @@ namespace SiegeUp.Core
         }
     }
 
-    public class GeneratedContent<T> : BaseGeneratedContent where T : struct
+    public class AIGeneratedContent<T> : BaseAIGeneratedContent where T : struct
     {
         [SerializeField] T content;
 
         public T Content => content;
 
-        public void Deserialize(string json)
+        public override void Deserialize(string json)
         {
             T contentTmp = JsonUtility.FromJson<T>(json);
             VerifyOrThrow(contentTmp);
             content = contentTmp;
         }
-        public string Serialize()
+
+        public override string Serialize()
         {
             return JsonUtility.ToJson(content);
         }
