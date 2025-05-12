@@ -15,20 +15,9 @@ namespace SiegeUp.Core
     public class BaseAIGeneratedContent : ScriptableObjectWithId, IReferenceable
     {
         [SerializeField, TextArea(10, 10)] public string prompt;
-        [SerializeField, HideInInspector] string lastJson;
         [SerializeField] List<Object> relevantItems;
 
-        public string Json
-        {
-            get => Serialize();
-            set
-            {
-                Deserialize(lastJson);
-                lastJson = value;
-            }
-        }
-
-        public string Reference => $"{lastJson}";
+        public string Reference => $"{Serialize()}";
         public string Name => name;
         string IReferenceable.Id => Id;
 
