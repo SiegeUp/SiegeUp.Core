@@ -10,7 +10,11 @@ namespace SiegeUp.Core.Editor
     {
         public override void OnInspectorGUI()
         {
-            base.OnInspectorGUI();
+            try
+            {
+                base.OnInspectorGUI();
+            }
+            catch { }
 
             var content = (BaseAIGeneratedContent)target;
 
