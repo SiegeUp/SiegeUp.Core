@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace SiegeUp.Core
 {
-    public class PrefabRef : MonoBehaviour
+    public class PrefabRef : MonoBehaviour, IReferenceable
     {
         [SerializeField]
         string prefabId;
@@ -13,6 +13,12 @@ namespace SiegeUp.Core
 
         public string PrefabId => prefabId;
         public bool Ignore => ignore;
+
+        public string Name => gameObject.name;
+
+        public string Id => prefabId;
+
+        public string Reference => $"Object id - {Id}. Can be used in eventFormats: player_picked_up_[id], player_dropped_[id], player_used_[id]";
 
         public void ResetId(string newPrefabId)
         {
