@@ -152,5 +152,22 @@ namespace SiegeUp.Core
             string typeName = obj.GetType().Name;
             return $"{namePart} ({typeName})";
         }
+
+        /// <summary>
+        /// Adds all key/value pairs from the source dictionary to the target dictionary.
+        /// If a key already exists in the target, its value will be overwritten.
+        /// </summary>
+        public static void AddRange<TKey, TValue>(this IDictionary<TKey, TValue> target, IDictionary<TKey, TValue> source)
+        {
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            foreach (var kvp in source)
+            {
+                target[kvp.Key] = kvp.Value;
+            }
+        }
     }
 }
