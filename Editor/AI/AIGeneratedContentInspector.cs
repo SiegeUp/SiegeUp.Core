@@ -45,9 +45,13 @@ namespace SiegeUp.Core.Editor
 
                 if (response.Choices.Count > 0)
                 {
-                    Debug.Log("AI returned: " + response.Choices[0].Message.Content);
-                    var generatedJsonString = response.Choices[0].Message.Content ?? "";
-                    content.Deserialize(generatedJsonString);
+                    var raw = response.Choices[0].Message.Content ?? "";
+                    Debug.Log("AI returned (raw): " + raw);
+
+                    var json = StripJsonFences(raw);
+                    Debug.Log("AI returned (stripped): " + json);
+
+                    content.Deserialize(json);
                 }
                 else
                 {
@@ -60,6 +64,22 @@ namespace SiegeUp.Core.Editor
             {
                 Debug.LogError($"Unexpected error during AI generation: {ex}");
             }
+        }
+
+        private string StripJsonFences(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return input;
+
+            var pattern = @"^```(?:json)?\s*([\s\S]*?)\s*```$";
+            var match = System.Text.RegularExpressions.Regex.Match(input.Trim(), pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if (match.Success && match.Groups.Count > 1)
+            {
+                return match.Groups[1].Value;
+            }
+
+            return input.Trim();
         }
     }
 }

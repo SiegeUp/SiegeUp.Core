@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -9,13 +10,14 @@ namespace SiegeUp.Core
     {
         string Name { get; }
         string Id { get; }
+        string PrefabId { get => null; } 
         string Reference { get; }
     }
 
     public class BaseAIGeneratedContent : ScriptableObjectWithId, IReferenceable
     {
         [SerializeField, TextArea(10, 10)] public string prompt;
-        [SerializeField] List<Object> relevantItems;
+        [SerializeField] List<UnityEngine.Object> relevantItems;
 
         public string Reference => $"{Serialize()}";
         public string Name => name;
@@ -24,7 +26,7 @@ namespace SiegeUp.Core
         public virtual string GetPrompt()
         {
             StringBuilder accumulatedPrompt = new();
-            accumulatedPrompt.AppendLine("References: ");
+            accumulatedPrompt.AppendLine("Object references: ");
             foreach (var item in relevantItems)
             {
                 var referenceable = item as IReferenceable ?? (item as GameObject)?.GetComponent<IReferenceable>();
@@ -34,8 +36,11 @@ namespace SiegeUp.Core
                     accumulatedPrompt.AppendLine($"{referenceable.Reference}");
                 }
             }
+
             accumulatedPrompt.AppendLine("Prompt: ");
             accumulatedPrompt.AppendLine(prompt);
+            Debug.Log(accumulatedPrompt.ToString());
+            Debug.Log(accumulatedPrompt.ToString());
             return accumulatedPrompt.ToString();
         }
 

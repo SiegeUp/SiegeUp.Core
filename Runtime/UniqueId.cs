@@ -15,6 +15,7 @@ namespace SiegeUp.Core
         string uniqueId;
 
         public string StringId => uniqueId;
+        public string ShortStringId => string.IsNullOrEmpty(uniqueId) ? "" : uniqueId.Substring(0, 10);
 
 
         [ContextMenu("Generate Id")]
