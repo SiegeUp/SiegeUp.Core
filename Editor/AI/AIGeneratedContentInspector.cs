@@ -29,9 +29,10 @@ namespace SiegeUp.Core.Editor
             try
             {
                 var prompt = content.GetPrompt();
+                Debug.Log(prompt.ToString());
                 var messages = new List<ChatMessage>
                 {
-                    new ChatMessage(MessageRole.User, "You are a JSON generator. Respond *only* with valid JSON, do not wrap in markdown fences."),
+                    new ChatMessage(MessageRole.User, "You are a JSON generator. Respond *only* with valid JSON."),
                     new ChatMessage(MessageRole.User, prompt)
                 };
 

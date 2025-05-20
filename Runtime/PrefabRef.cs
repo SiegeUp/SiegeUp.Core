@@ -9,7 +9,7 @@ namespace SiegeUp.Core
         [SerializeField] bool ignore;
 
         public string PrefabId => prefabId;
-        public string ShortPrefabId => prefabId.Substring(0, 10);
+        public string ShortPrefabId => prefabId.Substring(0, 8);
         public bool Ignore => ignore;
 
         public void ResetId(string newPrefabId)

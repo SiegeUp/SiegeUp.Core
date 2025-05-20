@@ -17,6 +17,7 @@ namespace SiegeUp.Core
     public class BaseAIGeneratedContent : ScriptableObjectWithId, IReferenceable
     {
         [SerializeField, TextArea(10, 10)] public string prompt;
+        [SerializeField] bool addSelfToPrompt;
         [SerializeField] List<UnityEngine.Object> relevantItems;
 
         public string Reference => $"{Serialize()}";
@@ -26,7 +27,8 @@ namespace SiegeUp.Core
         public virtual string GetPrompt()
         {
             StringBuilder accumulatedPrompt = new();
-            accumulatedPrompt.AppendLine("Object references: ");
+            accumulatedPrompt.AppendLine("Object references: \n");
+
             foreach (var item in relevantItems)
             {
                 var referenceable = item as IReferenceable ?? (item as GameObject)?.GetComponent<IReferenceable>();
@@ -34,13 +36,20 @@ namespace SiegeUp.Core
                 {
                     accumulatedPrompt.AppendLine($"{referenceable.Name}:");
                     accumulatedPrompt.AppendLine($"{referenceable.Reference}");
+                    accumulatedPrompt.AppendLine("");
                 }
             }
 
             accumulatedPrompt.AppendLine("Prompt: ");
             accumulatedPrompt.AppendLine(prompt);
-            Debug.Log(accumulatedPrompt.ToString());
-            Debug.Log(accumulatedPrompt.ToString());
+            accumulatedPrompt.AppendLine("");
+
+            if (addSelfToPrompt)
+            {
+                accumulatedPrompt.AppendLine($"{Name}:");
+                accumulatedPrompt.AppendLine($"{Reference}");
+            }
+
             return accumulatedPrompt.ToString();
         }
 
