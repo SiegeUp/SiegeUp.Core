@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UIElements;
@@ -151,6 +152,30 @@ namespace SiegeUp.Core
             string namePart = index >= 0 ? original.Substring(0, index).Trim() : original;
             string typeName = obj.GetType().Name;
             return $"{namePart} ({typeName})";
+        }
+
+        public static PooledArray<T> ToPooledArray<T>(this IEnumerable<T> source, int capacity = -1) => new PooledArray<T>(source, capacity);
+
+        public static bool HasAnyFlag<T>(this T value, T flags) where T : struct, Enum
+        {
+            if (UnsafeUtility.SizeOf<T>() != sizeof(uint))
+                throw new ArgumentException($"Enum type {typeof(T)} must be of size {sizeof(uint)}.");
+
+            uint valueFlags = UnsafeUtility.As<T, uint>(ref value);
+            uint flagValue = UnsafeUtility.As<T, uint>(ref flags);
+
+            return (valueFlags & flagValue) != 0;
+        }
+
+        public static bool HasAnyOtherFlag<T>(this T value, T flags) where T :struct, Enum
+        {
+            if (UnsafeUtility.SizeOf<T>() != sizeof(uint))
+                throw new ArgumentException($"Enum type {typeof(T)} must be of size {sizeof(uint)}.");
+
+            uint valueFlags = UnsafeUtility.As<T, uint>(ref value);
+            uint flagValue = UnsafeUtility.As<T, uint>(ref flags);
+
+            return (valueFlags & ~flagValue) != valueFlags;
         }
     }
 }
