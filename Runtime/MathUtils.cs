@@ -240,6 +240,29 @@ namespace SiegeUp.Core
             return new Vector2Int(averageX, averageY);
         }
 
+        public static Vector3 GetMiddlePoint(IEnumerable<Vector3> points)
+        {
+            int count = points.Count();
+            if (count == 0)
+                return Vector3.zero;
+
+            float invCount = 1f / count;
+
+            float sumX = 0f;
+            float sumY = 0f;
+            float sumZ = 0f;
+
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 v = points.ElementAt(i);
+                sumX += v.x;
+                sumY += v.y;
+                sumZ += v.z;
+            }
+
+            return new Vector3(sumX * invCount, sumY * invCount, sumZ * invCount);
+        }
+
         public static List<Vector2Int> GetPointsAroundPoint(Vector2Int point)
         {
             return GetPointsAroundPoints(new List<Vector2Int> { point });
