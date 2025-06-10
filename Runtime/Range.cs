@@ -104,7 +104,7 @@ namespace SiegeUp.Core
             {
                 boundingBoxList.gameObject.transform.GetPositionAndRotation(out Vector3 objectPosition, out var objectRotation);
 
-                var rect = MathUtils.GetRectFromBoxWorld(objectPosition, objectRotation, mainBoundingBox);
+                var rect = MathUtils.GetRectIntFromBoxWorld(objectPosition, objectRotation, mainBoundingBox);
                 var corner = new Vector3(rect.min.x, objectPosition.y, rect.min.y);
                 var size = new Vector3(rect.size.x, objectPosition.y, rect.size.y);
 

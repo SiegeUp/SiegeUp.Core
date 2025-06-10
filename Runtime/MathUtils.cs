@@ -96,17 +96,30 @@ namespace SiegeUp.Core
             return IsRectInRange2D(new Vector2(corner.x, corner.z), new Vector2(size.x, size.z), new Vector2(pos.x, pos.z), range);
         }
 
-        public static RectInt GetRectFromBoxWorld(Vector3 position, Quaternion rotation, BoundingBox boundingBox)
+        public static RectInt GetRectIntFromBoxWorld(Vector3 position, Quaternion rotation, BoundingBox boundingBox)
+        {
+            var rect = GetRectFromBoxWorld(position, rotation, boundingBox);    
+
+            var rectInt = new RectInt(
+                Mathf.FloorToInt(rect.x),
+                Mathf.FloorToInt(rect.y),
+                Mathf.CeilToInt(rect.width),
+                Mathf.CeilToInt(rect.height));
+
+            return rectInt;
+        }
+
+        public static Rect GetRectFromBoxWorld(Vector3 position, Quaternion rotation, BoundingBox boundingBox)
         {
             var rectLocal = boundingBox.GetRect(rotation);
 
             var globalPos = boundingBox.transform.localPosition + position;
 
-            var rect = new RectInt(
-                Mathf.FloorToInt(globalPos.x + rectLocal.x),
-                Mathf.FloorToInt(globalPos.z + rectLocal.y),
-                Mathf.CeilToInt(rectLocal.width),
-                Mathf.CeilToInt(rectLocal.height));
+            var rect = new Rect(
+                globalPos.x + rectLocal.x,
+                globalPos.z + rectLocal.y,
+                rectLocal.width,
+                rectLocal.height);
 
             return rect;
         }
@@ -295,23 +308,45 @@ namespace SiegeUp.Core
             return (int)Math.Round(number + adjustment);
         }
 
-        public static List<Vector2> GetPointsAroundBox(Rect rect, float distance, float step)
+        public static List<Vector2> GetPointsAroundBox(Rect rect, float step, float distance)
         {
-            List<Vector2> points = new();
-            var corner = rect.position - new Vector2(distance, distance);
-            for (float x = 0; x < rect.size.x + distance * 2; x += step)
-            {
-                for (float y = 0; y < rect.size.y + distance * 2; y += step)
-                {
-                    var point = corner + new Vector2(x, y) + Vector2.one * 0.5f;
+            if (step <= 0f)
+                throw new ArgumentException("Step must be greater than zero", nameof(step));
+            if (distance < 0f)
+                throw new ArgumentException("Distance cannot be negative", nameof(distance));
 
-                    if (!rect.Contains(point) && MathUtils.IsRectInRange2D(rect.position, rect.size, point, distance))
-                    {
-                        points.Add(point);
-                        Debug.DrawLine(new Vector3(point.x, 0, point.y), new Vector3(point.x, 2, point.y), Color.green, 10.0f);
-                    }
-                }
+            var points = new List<Vector2>();
+
+            int layers = Mathf.CeilToInt(distance / step);
+            for (int layer = 1; layer <= layers; layer++)
+            {
+                float layerDist = layer * step;
+                if (layerDist > distance)
+                    layerDist = distance;
+
+                float xMin = rect.xMin - layerDist;
+                float xMax = rect.xMax + layerDist;
+                float yMin = rect.yMin - layerDist;
+                float yMax = rect.yMax + layerDist;
+
+                for (float x = xMin; x <= xMax; x += step)
+                    points.Add(new Vector2(x, yMin));
+                for (float y = yMin + step; y <= yMax; y += step)
+                    points.Add(new Vector2(xMax, y));
+                for (float x = xMax - step; x >= xMin; x -= step)
+                    points.Add(new Vector2(x, yMax));
+                for (float y = yMax - step; y > yMin; y -= step)
+                    points.Add(new Vector2(xMin, y));
             }
+
+            float distanceOffset = distance <= 1f ? 0.5f : 0;
+            points = points.Where(i => IsRectInRange2D(rect.position, rect.size, i, distance + distanceOffset)).ToList();
+
+            foreach (var p in points)
+            {
+                Debug.DrawLine(p.GetX0Y(), p.GetX0Y() + Vector3.up * 4f, Color.green, 10f);
+            }
+            
             return points;
         }
 
