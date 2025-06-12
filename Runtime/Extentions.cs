@@ -156,26 +156,38 @@ namespace SiegeUp.Core
 
         public static PooledArray<T> ToPooledArray<T>(this IEnumerable<T> source, int capacity = -1) => new PooledArray<T>(source, capacity);
 
-        public static bool HasAnyFlag<T>(this T value, T flags) where T : struct, Enum
+        public static unsafe bool HasAnyFlag<T>(this T value, T flags) where T : unmanaged, Enum
         {
-            if (UnsafeUtility.SizeOf<T>() != sizeof(uint))
+            if (sizeof(T) != sizeof(uint))
                 throw new ArgumentException($"Enum type {typeof(T)} must be of size {sizeof(uint)}.");
 
-            uint valueFlags = UnsafeUtility.As<T, uint>(ref value);
-            uint flagValue = UnsafeUtility.As<T, uint>(ref flags);
+            uint valueFlags = *(uint*)(&value);
+            uint flagValue = *(uint*)(&flags);
 
             return (valueFlags & flagValue) != 0;
         }
 
-        public static bool HasAnyOtherFlag<T>(this T value, T flags) where T :struct, Enum
+        public static unsafe bool HasAnyOtherFlag<T>(this T value, T flags) where T : unmanaged, Enum
         {
-            if (UnsafeUtility.SizeOf<T>() != sizeof(uint))
+            if (sizeof(T) != sizeof(uint))
                 throw new ArgumentException($"Enum type {typeof(T)} must be of size {sizeof(uint)}.");
 
-            uint valueFlags = UnsafeUtility.As<T, uint>(ref value);
-            uint flagValue = UnsafeUtility.As<T, uint>(ref flags);
+            uint valueFlags = *(uint*)(&value);
+            uint flagValue = *(uint*)(&flags);
 
             return (valueFlags & ~flagValue) != valueFlags;
+        }
+
+        public static unsafe T AggregateFlags<T>(this IEnumerable<T> value) where T : unmanaged, Enum
+        {
+            if (sizeof(T) != sizeof(uint))
+                throw new ArgumentException($"Enum type {typeof(T)} must be of size {sizeof(uint)}.");
+
+            uint aggregatedFlags = 0;
+            foreach (var item in value)
+                aggregatedFlags |= *(uint*)(&item);
+
+            return *(T*)(&aggregatedFlags);
         }
     }
 }
