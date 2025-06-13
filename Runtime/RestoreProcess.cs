@@ -23,13 +23,13 @@ namespace SiegeUp.Core
         public Add add;
         public Destroy destroy;
 
-        public RestoreProcess(IReadOnlyDictionary<Guid, SerializedGameObjectBin> serializedObjectsBin, IReadOnlyDictionary<Guid, UniqueId> unitsIdsOnScene, Transform parent = null, int version = 0)
+        public RestoreProcess(IReadOnlyDictionary<Guid, SerializedGameObjectBin> serializedObjectsBin, Dictionary<Guid, UniqueId> unitsIdsOnScene, Transform parent = null, int version = 0)
         {
             if (serializedObjectsBin != null)
                 serializedGameObjectsBin = serializedObjectsBin;
             ValidateUniqueIds(serializedGameObjectsBin);
             if (unitsIdsOnScene != null)
-                uniqueIdsOnScene = new Dictionary<Guid, UniqueId>(unitsIdsOnScene);
+                this.uniqueIdsOnScene = unitsIdsOnScene;
             this.parent = parent;
             this.version = version;
         }
