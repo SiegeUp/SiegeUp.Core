@@ -25,6 +25,12 @@ namespace SiegeUp.Core
             NotEqual = 6
         }
 
+        public enum LogicalOperation
+        {
+            And = 1,
+            Or = 2
+        }
+
         public static byte[] GetHash(byte[] bytes)
         {
             using (HashAlgorithm algorithm = SHA256.Create())
