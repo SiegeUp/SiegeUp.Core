@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.AI;
@@ -188,6 +189,30 @@ namespace SiegeUp.Core
                 aggregatedFlags |= *(uint*)(&item);
 
             return *(T*)(&aggregatedFlags);
+        }
+
+        public static async void NeverForget(this Task task)
+        {
+            try
+            {
+                await task;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+
+        public static Task<T> ToCompletedTask<T>(this T value)
+        {
+            var completionSource = new TaskCompletionSource<T>();
+            completionSource.SetResult(value);
+            return completionSource.Task;
+        }
+
+        public static T GetResultOrDefault<T>(this Task<T> task)
+        {
+            return task.IsCompletedSuccessfully ? task.Result : default(T);
         }
     }
 }
