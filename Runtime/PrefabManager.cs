@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -31,6 +32,21 @@ namespace SiegeUp.Core
             }
 
             return result.NullCheck()?.GetComponent<PrefabRef>();
+        }
+
+        public PrefabRef GetPrefabRefByShortId(string shortId)
+        {
+            if (string.IsNullOrEmpty(shortId))
+                return null;
+
+            foreach (var pair in prefabMap)
+            {
+                var fullGuidStr = pair.Key.ToString();
+                if (fullGuidStr.StartsWith(shortId, StringComparison.OrdinalIgnoreCase))
+                    return pair.Value?.GetComponent<PrefabRef>();
+            }
+
+            return null;
         }
 
         public GameObject GetPrefab(System.Guid prefabId)

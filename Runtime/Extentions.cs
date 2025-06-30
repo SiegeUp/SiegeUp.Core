@@ -214,5 +214,18 @@ namespace SiegeUp.Core
         {
             return task.IsCompletedSuccessfully ? task.Result : default(T);
         }
+
+        public static void AddRange<TKey, TValue>(this IDictionary<TKey, TValue> target, IDictionary<TKey, TValue> source)
+        {
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            foreach (var kvp in source)
+            {
+                target[kvp.Key] = kvp.Value;
+            }
+        }
     }
 }

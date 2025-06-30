@@ -5,5 +5,8 @@
   "description": "SiegeUp core module includes all base components for construction and serializtion of game objects. Useful for modding and utilities.",
   "unity": "2021.3",
   "license": "Abuksigun SiegeUp",
-  "type": "visible"
+  "type": "visible",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  }
 }
