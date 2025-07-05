@@ -35,7 +35,19 @@ namespace SiegeUp.Core
             if (runtimeScriptableObjectsMap.TryGetValue(id, out result))
                 return result;
 
+            // Support for short Ids
+            if (scriptableObjectsMap.FirstOrDefault(x => x.Key.StartsWith(id)).Value is { } scriptableObject)
+                return scriptableObject;
+
+            if (runtimeScriptableObjectsMap.FirstOrDefault(x => x.Key.StartsWith(id)).Value is { } runtimeScriptableObject)
+                return runtimeScriptableObject;
+
             return null;
+        }
+
+        public T GetScriptableObject<T>(string id) where T : ScriptableObjectWithId
+        {
+            return GetScriptableObject(id) as T;
         }
 
         [ContextMenu("Update Map")]
