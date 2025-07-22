@@ -497,7 +497,7 @@ namespace SiegeUp.Core
             BinaryUtil.WriteByte(ref dest, countPos, (byte)count);
         }
 
-        public static unsafe object Read(byte[] source, ref int pos, Type type, ObjectContext context)
+        public static unsafe object Read(byte[] source, ref int pos, Type type, ObjectContext context, object value = null)
         {
             if (type.IsSubclassOf(typeof(Component)) || type.IsAssignableFrom(typeof(Transform)))
             {
@@ -533,7 +533,7 @@ namespace SiegeUp.Core
             }
             else if (type.IsClass)
             {
-                return ReadClass(source, ref pos, type, context);
+                return ReadClass(source, ref pos, type, context, value);
             }
             else
             {
@@ -770,9 +770,9 @@ namespace SiegeUp.Core
             return instance;
         }
 
-        private static unsafe object ReadClass(byte[] source, ref int pos, Type type, ObjectContext context)
+        private static unsafe object ReadClass(byte[] source, ref int pos, Type type, ObjectContext context, object value = null)
         {
-            object instance = Activator.CreateInstance(type);
+            object instance = value ?? Activator.CreateInstance(type);
             var nestedContext = new ObjectContext(context, instance, type);
             ReadObject(ref source, ref pos, nestedContext);
             return instance;
@@ -824,7 +824,7 @@ namespace SiegeUp.Core
                     continue;
                 var field = cache.fields[fieldIndex];
                 int pos = 0;
-                var value = Read(serializedField.data, ref pos, field.fieldInfo.FieldType, context);
+                var value = Read(serializedField.data, ref pos, field.fieldInfo.FieldType, context, field.fieldInfo.GetValue(context.obj));
                 if (value != null && value.GetType() != typeof(object))
                 {
                     field.fieldInfo.SetValue(context.obj, value);
