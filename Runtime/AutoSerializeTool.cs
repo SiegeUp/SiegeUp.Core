@@ -12,8 +12,6 @@ using static SiegeUp.Core.AutoSerializeTool.ClassReflectionCache;
 
 namespace SiegeUp.Core
 {
-
-
     [AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false)]
     public class ComponentId : Attribute
     {
@@ -48,28 +46,6 @@ namespace SiegeUp.Core
 
     public class AlwaysSerializeAttribute : Attribute
     {
-    }
-
-    public abstract class ScriptableObjectWithId : ScriptableObject
-    {
-        [SerializeField, FormerlySerializedAs("uid")]
-        string id;
-
-        public string Id => id;
-
-        public void ResetId(string id) => this.id = id;
-
-        public void UpdateId()
-        {
-#if UNITY_EDITOR
-            var newId = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(this));
-            if (!string.IsNullOrEmpty(newId) && Id != newId)
-            {
-                ResetId(newId);
-                EditorUtility.SetDirty(this);
-            }
-#endif
-        }
     }
 
     [Serializable]
