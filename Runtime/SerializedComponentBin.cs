@@ -32,6 +32,11 @@ namespace SiegeUp.Core
                 data = System.Convert.FromBase64String(_data);
         }
 
+        public bool HasField(int fieldId)
+        {
+            return autoSerialize.fields.Exists(item => item.id == fieldId);
+        }
+
         public T GetField<T>(int fieldId, int formatVersion)
         {
             int index = autoSerialize.fields.FindIndex(item => item.id == fieldId);
@@ -43,6 +48,17 @@ namespace SiegeUp.Core
             var deserialized = AutoSerializeTool.Deserialize(field.data, typeof(T), objectContext);
 
             return (T)deserialized;
+        }
+
+        public bool TryGetField<T>(int fieldId, int formatVersion, out T value)
+        {
+            if (!HasField(fieldId))
+            {
+                value = default;
+                return false;
+            }
+            value = GetField<T>(fieldId, formatVersion);
+            return true;
         }
 
         public void SetField<T>(int fieldId, T value, int formatVersion)
