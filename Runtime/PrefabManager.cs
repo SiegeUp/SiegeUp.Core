@@ -77,6 +77,8 @@ namespace SiegeUp.Core
                     if (prefabRef.PrefabId != newId)
                     {
                         prefabRef.ResetId(newId);
+                        if (prefabRef.GetComponent<UniqueId>().NullCheck() is { } uniqueId)
+                            uniqueId.ResetId(prefabRef.GetGuid());
                         EditorUtility.SetDirty(prefabRef.gameObject);
                     }
 
