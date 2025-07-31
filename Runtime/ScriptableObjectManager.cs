@@ -29,6 +29,9 @@ namespace SiegeUp.Core
 
         public ScriptableObject GetScriptableObject(string id)
         {
+            if (string.IsNullOrEmpty(id))
+                return null;
+
             if (scriptableObjectsMap.TryGetValue(id, out var result))
                 return result;
 
