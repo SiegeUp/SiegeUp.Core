@@ -95,6 +95,21 @@ namespace SiegeUp.Core
             return new Vector3(v2.x, 0, v2.y);
         }
 
+        public static int ToInt(this Color32 color)
+        {
+            return color.r | (color.g << 8) | (color.b << 16) | (color.a << 24);
+        }
+
+        public static Color32 ToColor32(this int intValue)
+        {
+            byte r = (byte)(intValue & 0xFF);
+            byte g = (byte)((intValue >> 8) & 0xFF);
+            byte b = (byte)((intValue >> 16) & 0xFF);
+            byte a = (byte)((intValue >> 24) & 0xFF);
+            var color = new Color32(r, g, b, a);
+            return color;
+        }
+
         public static Vector2Int Round(this Vector2 v)
         {
             return new Vector2Int((int)Math.Round(v.x), (int)Math.Round(v.y));
