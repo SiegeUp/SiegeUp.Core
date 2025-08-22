@@ -356,15 +356,14 @@ namespace SiegeUp.Core
             return points;
         }
 
-        public static List<Vector3> SortPointsByDistanceToPoint(List<Vector3> points, Vector3 point, float maxDist = float.MaxValue, int numberOfClosestPoints = int.MaxValue)
+        public static IEnumerable<Vector3> SortPointsByDistanceToPoint(IEnumerable<Vector3> points, Vector3 point, float maxDist = float.MaxValue, int numberOfClosestPoints = int.MaxValue)
         {
             float maxDistSquared = maxDist * maxDist;
 
             return points
-                .Where(p => Vector3.SqrMagnitude(p - point) <= maxDistSquared) 
-                .OrderBy(p => Vector3.SqrMagnitude(p - point))              
-                .Take(numberOfClosestPoints)                                 
-                .ToList();                                                  
+                .Where(p => Vector3.SqrMagnitude(p - point) <= maxDistSquared)
+                .OrderBy(p => Vector3.SqrMagnitude(p - point))
+                .Take(numberOfClosestPoints);                                                
         }
 
         public static float GetNearestDivisible(float num, float divisor)
