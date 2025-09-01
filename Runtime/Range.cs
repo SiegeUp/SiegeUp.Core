@@ -28,7 +28,7 @@ namespace SiegeUp.Core
 
         Vector3 positionCache;
         int cacheFrame;
-        public RangeShapeType RangeType => rangeType;
+        public RangeShapeType RangeType { get => rangeType; set => rangeType = value; }
         public float Radius { get => radius; set => radius = value; }
         public Bounds Bounds { get => bounds; set => bounds = value; }
         public bool Global => global;
