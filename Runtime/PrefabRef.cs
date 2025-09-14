@@ -12,6 +12,8 @@ namespace SiegeUp.Core
         public string ShortPrefabId => prefabId.Substring(0, 8);
         public bool Ignore => ignore;
 
+        Guid cachedGuid;
+
         public void ResetId(string newPrefabId)
         {
             prefabId = newPrefabId;
@@ -19,7 +21,9 @@ namespace SiegeUp.Core
 
         public Guid GetGuid()
         {
-            return ReflectionUtils.StrToGuid(prefabId);
+            if (cachedGuid == default)
+                cachedGuid = ReflectionUtils.StrToGuid(prefabId);
+            return cachedGuid;
         }
     }
 }
