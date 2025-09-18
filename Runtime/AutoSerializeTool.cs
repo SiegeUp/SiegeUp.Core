@@ -1257,10 +1257,20 @@ namespace SiegeUp.Core
 
             foreach (var uniqueId in restoreProcess.uniqueIdsOnScene)
             {
+                if (!uniqueId.Value)
+                {
+                    Debug.LogError("Warning: There is no value for uniqueId " + uniqueId.Key);
+                    continue;
+                }
+
                 bool noAmongSerializedBin = restoreProcess.serializedGameObjectsBin == null || !restoreProcess.serializedGameObjectsBin.ContainsKey(uniqueId.Key);
 
-                if (uniqueId.Value.transform.parent != null && uniqueId.Value.transform.parent == restoreProcess.parent && noAmongSerializedBin)
+                if (uniqueId.Value.transform.parent != null
+                    && uniqueId.Value.transform.parent == restoreProcess.parent
+                    && noAmongSerializedBin)
+                {
                     restoreProcess.destroy(uniqueId.Value.gameObject);
+                }
             }
         }
 
