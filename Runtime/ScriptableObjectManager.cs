@@ -100,13 +100,11 @@ namespace SiegeUp.Core
             UpdateMap();
         }
 #endif
+
         public void AddRuntimeScriptableObjects(List<ScriptableObjectWithId> scriptableObjects)
         {
             foreach (var scriptableObject in scriptableObjects)
-            {
-                if (!runtimeScriptableObjectsMap.ContainsKey(scriptableObject.Id) && !scriptableObjectsMap.ContainsKey(scriptableObject.Id))
-                    runtimeScriptableObjectsMap.Add(scriptableObject.Id, scriptableObject);
-            }
+                runtimeScriptableObjectsMap[scriptableObject.Id] = scriptableObject;
         }
 
         public void RemoveRuntimeScriptableObjects(List<ScriptableObjectWithId> scriptableObjects)
