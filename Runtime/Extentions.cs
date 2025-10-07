@@ -55,6 +55,11 @@ namespace SiegeUp.Core
             return unityObject ? unityObject : null;
         }
 
+        public static T GetOrAddComponent<T>(this GameObject obj) where T : Component
+        {
+            return obj.GetComponent<T>().NullCheck() ?? obj.AddComponent<T>();
+        }
+
         public static GameObject GetOriginalObject(this PrefabRef prefabRef)
         {
             return Service<PrefabManager>.instance.GetPrefab(prefabRef);
