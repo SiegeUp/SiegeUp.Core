@@ -19,7 +19,7 @@ namespace SiegeUp.Core
         {
 #if UNITY_EDITOR
             var newId = UnityEditor.AssetDatabase.AssetPathToGUID(UnityEditor.AssetDatabase.GetAssetPath(this));
-            if (!string.IsNullOrEmpty(newId) && Id != newId)
+            if (!string.IsNullOrEmpty(newId) && !Id.StartsWith(newId))
             {
                 ResetId(newId);
                 UnityEditor.EditorUtility.SetDirty(this);
