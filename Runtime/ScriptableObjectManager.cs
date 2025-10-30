@@ -82,7 +82,7 @@ namespace SiegeUp.Core
         List<T> FindAllScriptableObjects<T>() where T : ScriptableObject
         {
             var resources = Resources.FindObjectsOfTypeAll<T>();
-            var initialPrefabs = resources.Where(resource => AssetDatabase.Contains(resource) && !AssetDatabase.IsSubAsset(resource)).Select(i => i).ToList();
+            var initialPrefabs = resources.Where(resource => AssetDatabase.Contains(resource)).Select(i => i).ToList();
             initialPrefabs.Sort((a, b) => String.Compare(AssetDatabase.GetAssetPath(a), AssetDatabase.GetAssetPath(b), StringComparison.Ordinal));
             return initialPrefabs;
         }
