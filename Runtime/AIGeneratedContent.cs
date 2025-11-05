@@ -62,16 +62,42 @@ namespace SiegeUp.Core
         }
     }
 
+    public class ValidationException : Exception
+    {
+        public int Line { get; }
+        public int Column { get; }
+
+        public ValidationException(string message, int line, int column) : base(message)
+        {
+            Line = line;
+            Column = column;
+        }
+
+        public ValidationException(string message) : base(message)
+        {
+            Line = -1;
+            Column = -1;
+        }
+    }
+
     public class AIGeneratedContent<T> : BaseAIGeneratedContent where T : struct
     {
+        [SerializeField] Sprite icon;
         [SerializeField] T content;
 
         public T Content => content;
+        public Sprite Icon => icon;
+
+        public void SetContent(T content, Sprite icon)
+        {
+            this.content = content;
+            this.icon = icon;
+        }
 
         public override void Deserialize(string json)
         {
             T contentTmp = JsonUtility.FromJson<T>(json);
-            VerifyOrThrow(contentTmp);
+            VerifyOrThrow(contentTmp, null);
             content = contentTmp;
         }
 
@@ -80,6 +106,14 @@ namespace SiegeUp.Core
             return JsonUtility.ToJson(content);
         }
 
-        public virtual void VerifyOrThrow(T content) {}
+        public virtual void VerifyOrThrow(T content, Dictionary<object, (int line, int column)> sourceMap) { }
+
+        protected void ThrowValidation(string message, Dictionary<object, (int line, int column)> sourceMap, object key)
+        {
+            if (sourceMap != null && sourceMap.TryGetValue(key, out var pos))
+                throw new ValidationException(message, pos.line, pos.column);
+            else
+                throw new ValidationException(message);
+        }
     }
 }
