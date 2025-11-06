@@ -41,7 +41,7 @@ namespace SiegeUp.Core
         {
             int index = autoSerialize.fields.FindIndex(item => item.id == fieldId);
             if (index == -1)
-                throw new Exception($"No such field {id} in {ReflectionUtils.GetComponentById(id)}");
+                throw new Exception($"No such field {fieldId} in {ReflectionUtils.GetComponentById(id)}");
 
             var field = autoSerialize.fields[index];
             var objectContext = new ObjectContext(Service<PrefabManager>.instance, Service<ScriptableObjectManager>.instance, formatVersion, null, null, null, null);
