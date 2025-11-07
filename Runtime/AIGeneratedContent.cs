@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using UnityEngine;
 
@@ -10,7 +11,7 @@ namespace SiegeUp.Core
     {
         string Name { get; }
         string Id { get; }
-        string PrefabId { get => null; } 
+        string PrefabId { get => null; }
         string Reference { get; }
     }
 
@@ -51,6 +52,24 @@ namespace SiegeUp.Core
             }
 
             return accumulatedPrompt.ToString();
+        }
+
+        [ContextMenu("Export")]
+        public void Export()
+        {
+            var assetPath = UnityEditor.AssetDatabase.GetAssetPath(this);
+            var dir = Path.GetDirectoryName(assetPath);
+            var file = Path.GetFileNameWithoutExtension(assetPath) + ".cd";
+            var outPath = Path.Combine(dir, file);
+
+            File.WriteAllText(outPath, ToCrystalDust());
+            Debug.Log($"Exported to: {outPath}");
+            UnityEditor.AssetDatabase.Refresh();
+        }
+
+        public virtual string ToCrystalDust()
+        {
+            throw new NotImplementedException();
         }
 
         public virtual void Deserialize(string json) { }
