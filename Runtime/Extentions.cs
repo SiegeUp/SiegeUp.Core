@@ -85,9 +85,9 @@ namespace SiegeUp.Core
             return new Vector2(v3.x, v3.y);
         }
 
-        public static List<Vector3> GetX0Y(this List<Vector2> vectors)
+        public static IEnumerable<Vector3> GetX0Y(this IEnumerable<Vector2> vectors)
         {
-            return vectors.Select(v => new Vector3(v.x, 0, v.y)).ToList();
+            return vectors.Select(v => new Vector3(v.x, 0, v.y));
         }
 
         public static Vector3 GetX0Y(this Vector2 v2)

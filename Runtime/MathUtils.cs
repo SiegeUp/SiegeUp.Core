@@ -356,14 +356,39 @@ namespace SiegeUp.Core
             return points;
         }
 
-        public static IEnumerable<Vector3> SortPointsByDistanceToPoint(IEnumerable<Vector3> points, Vector3 point, float maxDist = float.MaxValue, int numberOfClosestPoints = int.MaxValue)
+        public static List<Vector3> SortPointsByDistanceToPoint(IEnumerable<Vector3> points, Vector3 point, float maxDistance = float.MaxValue, int numberOfClosestPoints = int.MaxValue)
         {
-            float maxDistSquared = maxDist * maxDist;
+            if (points == null)
+                throw new ArgumentNullException(nameof(points));
 
-            return points
-                .Where(p => Vector3.SqrMagnitude(p - point) <= maxDistSquared)
-                .OrderBy(p => Vector3.SqrMagnitude(p - point))
-                .Take(numberOfClosestPoints);                                                
+            if (numberOfClosestPoints <= 0)
+                return new List<Vector3>(0);
+
+            float maxDistanceSquared = maxDistance * maxDistance;
+
+            var list = new List<(Vector3 pos, float distSq)>();
+
+            foreach (var p in points)
+            {
+                var diff = p - point;
+                float distSq = diff.sqrMagnitude;
+
+                if (distSq <= maxDistanceSquared)
+                    list.Add((p, distSq));
+            }
+
+            if (list.Count == 0)
+                return new List<Vector3>(0);
+
+            list.Sort((a, b) => a.distSq.CompareTo(b.distSq));
+
+            int count = Math.Min(numberOfClosestPoints, list.Count);
+            var result = new List<Vector3>(count);
+
+            for (int i = 0; i < count; i++)
+                result.Add(list[i].pos);
+
+            return result;
         }
 
         public static float GetNearestDivisible(float num, float divisor)
