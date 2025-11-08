@@ -82,6 +82,7 @@ namespace SiegeUp.Core.AI
         public int? MaxOutputTokens { get; init; }
         public List<string>? StopSequences { get; init; }
         public int? CandidateCount { get; init; }
+        public bool StructuredResponse { get; init; } = false;
     }
 
     public record ResponseChoice

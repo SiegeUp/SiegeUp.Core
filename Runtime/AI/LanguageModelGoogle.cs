@@ -41,6 +41,7 @@ namespace SiegeUp.Core.AI
             int? TopK,
             int? CandidateCount,
             int? MaxOutputTokens,
+            [JsonProperty("response_mime_type")] string? ResponseMimeType,
             List<string>? StopSequences
         );
 
@@ -230,6 +231,7 @@ namespace SiegeUp.Core.AI
                 googleConfig = new GoogleGenerationConfig(
                     Temperature: config.Temperature, TopP: config.TopP, TopK: config.TopK,
                     CandidateCount: config.CandidateCount, MaxOutputTokens: config.MaxOutputTokens,
+                    ResponseMimeType: config.StructuredResponse ? "application/json" : null,
                     StopSequences: config.StopSequences
                 );
             }
