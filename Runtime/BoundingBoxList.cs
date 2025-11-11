@@ -58,9 +58,12 @@ namespace SiegeUp.Core
             var mainBoundintersectingPoints = localMainBoundIntersectingPoints.Select(x => x + position.GetXZ()).ToList();
             return mainBoundintersectingPoints;
         }
-        
+
         public List<Vector2> GetIntersectingPoints(Rect rect, float angle)
         {
+            if (angle == 0)
+                return GetIntersectingPointsNoRotation(rect);
+
             Vector2[] directions = new[] { new Vector2(1, 1), new Vector2(1, -1), new Vector2(-1, -1), new Vector2(-1, 1) };
             var rotQuaternion = Quaternion.Euler(0, 0, angle);
             var worldPoints = new List<Vector2>();
@@ -88,6 +91,37 @@ namespace SiegeUp.Core
                     }
                 }
             }
+            return worldPoints;
+        }
+
+        private List<Vector2> GetIntersectingPointsNoRotation(Rect rect)
+        {
+            var worldPoints = new List<Vector2>();
+
+            float offsetX = Mathf.Ceil(rect.size.x) % 2 == 0 ? 0.5f : 0f;
+            float offsetY = Mathf.Ceil(rect.size.y) % 2 == 0 ? 0.5f : 0f;
+            var offset = new Vector2(offsetX, offsetY);
+
+            int minX = Mathf.FloorToInt(rect.xMin - offset.x);
+            int maxX = Mathf.CeilToInt(rect.xMax - offset.x);
+            int minY = Mathf.FloorToInt(rect.yMin - offset.y);
+            int maxY = Mathf.CeilToInt(rect.yMax - offset.y);
+
+            for (int x = minX; x <= maxX; x++)
+            {
+                for (int y = minY; y <= maxY; y++)
+                {
+                    var worldPoint = new Vector2(x, y) + offset;
+
+                    if (!rect.Contains(worldPoint))
+                        continue;
+
+                    var newPoint = new Vector2(x, y) + offset - new Vector2(0.5f, 0.5f);
+
+                    worldPoints.Add(newPoint);
+                }
+            }
+
             return worldPoints;
         }
 
