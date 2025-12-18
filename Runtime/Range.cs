@@ -32,6 +32,17 @@ namespace SiegeUp.Core
         public float Radius { get => radius; set => radius = value; }
         public Bounds Bounds { get => bounds; set => bounds = value; }
         public bool Global => global;
+        public Bounds AbsoluteBounds
+        {
+            get
+            {
+                var worldBounds = bounds;
+                worldBounds.center = transform.TransformPoint(bounds.center);
+                worldBounds.size = Vector3.Scale(bounds.size, transform.lossyScale);
+                return worldBounds;
+            }
+        }
+
 
         public bool IsPointInRangeOptimized(Vector3 point, int currentFrame)
         {
