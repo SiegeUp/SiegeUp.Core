@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Xml;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions.Must;
 using UnityEngine.Serialization;
@@ -102,10 +101,13 @@ namespace SiegeUp.Core
         public PrefabManager prefabManager;
         public ScriptableObjectManager scriptableObjectManager;
         public int formatVersion;
-        public FindObjectById findObjectById;
+        public FindObjectById findObjectById; // Used only for realtime object lookup in multiplayer, not for level serialization
         public object obj;
         public string nameOnScene;
         public Type type;
+        public List<string> collectedGuids; // For dry run mode - collects GUIDs without resolving
+
+        public bool IsDryRun => prefabManager == null && scriptableObjectManager == null; // Dry run is useful to get list of dependencies during full asset import
 
         public ObjectContext(PrefabManager prefabManager, ScriptableObjectManager scriptableObjectManager, int formatVersion, FindObjectById findObjectById, object obj, string nameOnScene, Type type)
         {
@@ -116,11 +118,14 @@ namespace SiegeUp.Core
             this.nameOnScene = nameOnScene;
             this.type = type;
             this.formatVersion = formatVersion;
+            if (IsDryRun)
+                this.collectedGuids = new List<string>();
         }
 
         public ObjectContext(ObjectContext parentContext, object obj, Type type) 
             : this(parentContext.prefabManager, parentContext.scriptableObjectManager, parentContext.formatVersion, parentContext.findObjectById, obj, parentContext.nameOnScene, type)
         {
+            this.collectedGuids = parentContext.collectedGuids;
         }
     }
 
@@ -565,6 +570,14 @@ namespace SiegeUp.Core
             Guid guid = ReadGuidSafe(source, ref pos);
             if (guid != Guid.Empty)
             {
+                if (context.IsDryRun)
+                {
+                    string guidStr = guid.ToString("N");
+                    if (!context.collectedGuids.Contains(guidStr))
+                        context.collectedGuids.Add(guidStr);
+                    return null;
+                }
+
                 if (type == typeof(PrefabRef))
                 {
                     var prefabObj = context.prefabManager.GetPrefab(guid);
@@ -588,6 +601,12 @@ namespace SiegeUp.Core
         private static unsafe object ReadScriptableObject(byte[] source, ref int pos, ObjectContext context)
         {
             string str = Read(source, ref pos, typeof(string), context) as string;
+            if (context.IsDryRun)
+            {
+                if (!string.IsNullOrEmpty(str) && !context.collectedGuids.Contains(str))
+                    context.collectedGuids.Add(str);
+                return null;
+            }
             return context.scriptableObjectManager.GetScriptableObject(str);
         }
 

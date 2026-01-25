@@ -45,6 +45,12 @@ namespace SiegeUp.Core
             if (runtimeScriptableObjectsMap.FirstOrDefault(x => x.Key.StartsWith(id)).Value is { } runtimeScriptableObject)
                 return runtimeScriptableObject;
 
+#if UNITY_EDITOR
+            var path = AssetDatabase.GUIDToAssetPath(id);
+            if (!string.IsNullOrEmpty(path))
+                return AssetDatabase.LoadAssetAtPath<ScriptableObjectWithId>(path);
+#endif
+
             return null;
         }
 

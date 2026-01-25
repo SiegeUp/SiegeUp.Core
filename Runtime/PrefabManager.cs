@@ -24,14 +24,7 @@ namespace SiegeUp.Core
 
         public PrefabRef GetPrefabRef(System.Guid prefabId)
         {
-            GameObject result;
-            if (!prefabMap.TryGetValue(prefabId, out result))
-            {
-                //Debug.Log("Can't find prefab " + prefabId);
-                return null;
-            }
-
-            return result.NullCheck()?.GetComponent<PrefabRef>();
+            return GetPrefab(prefabId).NullCheck()?.GetComponent<PrefabRef>();
         }
 
         public PrefabRef GetPrefabRefByShortId(string shortId)
@@ -51,13 +44,16 @@ namespace SiegeUp.Core
 
         public GameObject GetPrefab(System.Guid prefabId)
         {
-            GameObject result;
-            if (!prefabMap.TryGetValue(prefabId, out result))
-            {
-                //Debug.Log("Can't find prefab " + prefabId);
-            }
+            if (prefabMap.TryGetValue(prefabId, out var result))
+                return result;
 
-            return result;
+#if UNITY_EDITOR
+            var path = AssetDatabase.GUIDToAssetPath(prefabId.ToString("N"));
+            if (!string.IsNullOrEmpty(path))
+                return AssetDatabase.LoadAssetAtPath<GameObject>(path);
+#endif
+
+            return null;
         }
 
         public GameObject GetPrefab(PrefabRef prefabRef)
