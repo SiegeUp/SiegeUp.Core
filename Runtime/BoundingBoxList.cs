@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace SiegeUp.Core
@@ -19,27 +18,37 @@ namespace SiegeUp.Core
 
         public List<Vector2Int> GetCurrentPassablePointsOnGrid()
         {
-            var passablePointsOnGrid = GetPassablePointsOnGrid(transform.position, transform.rotation);
-            return passablePointsOnGrid.Select(x => MathUtils.RoundToVector2Int(x)).ToList();
+            return GetPassablePointsOnGrid(transform.position, transform.rotation);
         }
 
         public List<Vector2Int> GetPassablePointsOnGrid(Vector3 position, Quaternion rotation)
         {
-            var passableIntersectingPoints = GetPassableIntersectingPoints(position, rotation);
-            return passableIntersectingPoints.Select(x => MathUtils.RoundToVector2Int(x)).ToList();
+            var rawPoints = GetPassableIntersectingPoints(position, rotation);
+            var result = new List<Vector2Int>(rawPoints.Count);
+
+            for (int i = 0; i < rawPoints.Count; i++)
+            {
+                result.Add(MathUtils.RoundToVector2Int(rawPoints[i]));
+            }
+            return result;
         }
 
         List<Vector2> GetPassableIntersectingPoints(Vector3 position, Quaternion rotation)
         {
-            List<Vector2> passableLocalIntersectingPoints = new List<Vector2>();
+            var result = new List<Vector2>();
+            var posXZ = position.GetXZ();
+            float angle = rotation.eulerAngles.y;
+
             foreach (var passableBoundingBox in passableBoundingBoxes)
             {
-                passableLocalIntersectingPoints.AddRange(GetIntersectingPoints(passableBoundingBox.GetLocalRect(), rotation.eulerAngles.y));
+                var localPoints = GetIntersectingPoints(passableBoundingBox.GetLocalRect(), angle);
+                for (int i = 0; i < localPoints.Count; i++)
+                {
+                    result.Add(localPoints[i] + posXZ);
+                }
             }
-            var passableIntersectingPoints = passableLocalIntersectingPoints.Select(x => x + position.GetXZ()).ToList();
-            return passableIntersectingPoints;
+            return result;
         }
-        
 
         public List<Vector2Int> GetMainBoundCurrentPointsOnGrid()
         {
@@ -48,15 +57,26 @@ namespace SiegeUp.Core
 
         public List<Vector2Int> GetMainBoundPointsOnGrid(Vector3 position, Quaternion rotation)
         {
-            var mainBoundIntersectingPoints = GetMainBoundIntersectingPoints(position, rotation);
-            return mainBoundIntersectingPoints.Select(x => MathUtils.RoundToVector2Int(x)).ToList();
+            var rawPoints = GetMainBoundIntersectingPoints(position, rotation);
+            var result = new List<Vector2Int>(rawPoints.Count);
+
+            for (int i = 0; i < rawPoints.Count; i++)
+            {
+                result.Add(MathUtils.RoundToVector2Int(rawPoints[i]));
+            }
+            return result;
         }
 
         List<Vector2> GetMainBoundIntersectingPoints(Vector3 position, Quaternion rotation)
         {
-            var localMainBoundIntersectingPoints = GetIntersectingPoints(mainBoundingBox.GetLocalRect(), rotation.eulerAngles.y);
-            var mainBoundintersectingPoints = localMainBoundIntersectingPoints.Select(x => x + position.GetXZ()).ToList();
-            return mainBoundintersectingPoints;
+            var localPoints = GetIntersectingPoints(mainBoundingBox.GetLocalRect(), rotation.eulerAngles.y);
+            var posXZ = position.GetXZ();
+
+            for (int i = 0; i < localPoints.Count; i++)
+            {
+                localPoints[i] += posXZ;
+            }
+            return localPoints;
         }
 
         public List<Vector2> GetIntersectingPoints(Rect rect, float angle)
@@ -64,27 +84,32 @@ namespace SiegeUp.Core
             if (angle == 0)
                 return GetIntersectingPointsNoRotation(rect);
 
-            Vector2[] directions = new[] { new Vector2(1, 1), new Vector2(1, -1), new Vector2(-1, -1), new Vector2(-1, 1) };
             var rotQuaternion = Quaternion.Euler(0, 0, angle);
+            var inverseRotQuaternion = Quaternion.Euler(0, 0, -angle);
+
             var worldPoints = new List<Vector2>();
 
             float offsetX = Mathf.Ceil(rect.size.x) % 2 == 0 ? 0.5f : 0;
             float offsetY = Mathf.Ceil(rect.size.y) % 2 == 0 ? 0.5f : 0;
             var offset = new Vector2(offsetX, offsetY);
+
+            var rotatedOffset = (Vector2)(inverseRotQuaternion * offset);
+
             float maxSide = Mathf.Max(rect.size.x, rect.size.y);
             float diagonalSize = Mathf.Ceil(Mathf.Sqrt(maxSide * maxSide * 2));
+
             for (float x = 0; x <= diagonalSize; x += 1)
             {
                 for (float y = 0; y <= diagonalSize; y += 1)
                 {
-                    foreach (var direction in directions)
+                    foreach (var direction in MathUtils.inCorners)
                     {
                         var point = new Vector2(x * direction.x, y * direction.y);
-
                         var worldPoint = (Vector2)(rotQuaternion * point) + offset;
+
                         if (rect.Contains(worldPoint))
                         {
-                            var newPoint = point + (Vector2)(Quaternion.Euler(0, 0, -angle) * offset) - new Vector2(0.5f, 0.5f);
+                            var newPoint = point + rotatedOffset - new Vector2(0.5f, 0.5f);
                             if (!worldPoints.Contains(newPoint))
                                 worldPoints.Add(newPoint);
                         }
@@ -101,6 +126,7 @@ namespace SiegeUp.Core
             float offsetX = Mathf.Ceil(rect.size.x) % 2 == 0 ? 0.5f : 0f;
             float offsetY = Mathf.Ceil(rect.size.y) % 2 == 0 ? 0.5f : 0f;
             var offset = new Vector2(offsetX, offsetY);
+            var shift = offset - new Vector2(0.5f, 0.5f);
 
             int minX = Mathf.FloorToInt(rect.xMin - offset.x);
             int maxX = Mathf.CeilToInt(rect.xMax - offset.x);
@@ -116,9 +142,7 @@ namespace SiegeUp.Core
                     if (!rect.Contains(worldPoint))
                         continue;
 
-                    var newPoint = new Vector2(x, y) + offset - new Vector2(0.5f, 0.5f);
-
-                    worldPoints.Add(newPoint);
+                    worldPoints.Add(new Vector2(x, y) + shift);
                 }
             }
 
@@ -137,6 +161,7 @@ namespace SiegeUp.Core
         {
             if (Application.isPlaying)
                 return;
+
             transform.localPosition -= new Vector3(0, transform.localPosition.y, 0);
         }
 
@@ -148,8 +173,12 @@ namespace SiegeUp.Core
             var notPassableGridPoints = GetMainBoundCurrentPointsOnGrid();
 
             if (showMainBoundIntersectionPointsGizmos)
+            {
+                Vector2 size = Vector2.one;
+                Vector3 upHeight = Vector3.up * gizmosGridHeight;
                 foreach (var point in rawPoints)
-                    GizmosUtils.DrawRectWithStartAndSize(Color.blue, point.GetX0Y() + (Vector3.up * gizmosGridHeight), Vector2.one.GetX0Y());
+                    GizmosUtils.DrawRectWithStartAndSize(Color.blue, point.GetX0Y() + upHeight, size.GetX0Y());
+            }
 
             if (showMainBoundPassablePointsOnGridGizmos)
                 GizmosUtils.DrawCells(Color.red, passableGridPoints, gizmosGridHeight + 0.2f, Vector2.one.GetX0Y());
