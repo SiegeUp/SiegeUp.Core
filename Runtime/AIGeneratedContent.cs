@@ -54,6 +54,7 @@ namespace SiegeUp.Core
             return accumulatedPrompt.ToString();
         }
 
+#if UNITY_EDITOR
         [ContextMenu("Export")]
         public void Export()
         {
@@ -66,6 +67,7 @@ namespace SiegeUp.Core
             Debug.Log($"Exported to: {outPath}");
             UnityEditor.AssetDatabase.Refresh();
         }
+#endif
 
         public virtual string ToCrystalDust()
         {
