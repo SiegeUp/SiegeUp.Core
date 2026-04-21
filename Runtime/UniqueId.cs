@@ -11,6 +11,8 @@ namespace SiegeUp.Core
     {
         static Dictionary<string, UniqueId> allGuids = new();
 
+        public static IReadOnlyDictionary<string, UniqueId> AllGuids => allGuids;
+
         [SerializeField]
         string uniqueId;
 

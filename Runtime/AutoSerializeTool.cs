@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Xml;
 using UnityEngine;
 using UnityEngine.Assertions.Must;
@@ -1253,27 +1254,64 @@ namespace SiegeUp.Core
 
             foreach (var serializedGameObjectPair in restoreProcess.serializedGameObjectsBin)
             {
-                var targetObject = FindObjectById(serializedGameObjectPair.Value.id, restoreProcess);
-
-                if (targetObject == null)
-                {
-                    targetObject = CreateObjectBin(serializedGameObjectPair.Value, restoreProcess);
-                    if (targetObject == null)
-                        continue;
-                }
-
-                if (serializedGameObjectPair.Value.serializedComponents != null)
-                    DeserializeComponentsBin(serializedGameObjectPair.Value, targetObject, restoreProcess);
-                createdObjects.Add(targetObject);
+                var targetObject = RestoreSingleObject(serializedGameObjectPair.Value, restoreProcess);
+                if (targetObject != null)
+                    createdObjects.Add(targetObject);
             }
 
             return createdObjects;
         }
 
+        public static async Task<List<GameObject>> RestoreObjectsAsync(RestoreProcess restoreProcess, int chunkSize = 25)
+        {
+            var createdObjects = new List<GameObject>();
+            int processed = 0;
+
+            foreach (var serializedGameObjectPair in restoreProcess.serializedGameObjectsBin)
+            {
+                var targetObject = RestoreSingleObject(serializedGameObjectPair.Value, restoreProcess);
+                if (targetObject != null)
+                    createdObjects.Add(targetObject);
+
+                processed++;
+                if (processed % chunkSize == 0)
+                    await Task.Yield();
+            }
+
+            return createdObjects;
+        }
+
+        static GameObject RestoreSingleObject(SerializedGameObjectBin serializedObject, RestoreProcess restoreProcess)
+        {
+            var targetObject = FindObjectById(serializedObject.id, restoreProcess);
+
+            if (targetObject == null)
+            {
+                targetObject = CreateObjectBin(serializedObject, restoreProcess);
+                if (targetObject == null)
+                    return null;
+            }
+
+            if (serializedObject.serializedComponents != null)
+                DeserializeComponentsBin(serializedObject, targetObject, restoreProcess);
+
+            return targetObject;
+        }
+
         public static void RestoreScene(RestoreProcess restoreProcess)
         {
             RestoreObjects(restoreProcess);
+            CleanupOrphanedSceneObjects(restoreProcess);
+        }
 
+        public static async Task RestoreSceneAsync(RestoreProcess restoreProcess, int chunkSize = 25)
+        {
+            await RestoreObjectsAsync(restoreProcess, chunkSize);
+            CleanupOrphanedSceneObjects(restoreProcess);
+        }
+
+        static void CleanupOrphanedSceneObjects(RestoreProcess restoreProcess)
+        {
             foreach (var uniqueId in restoreProcess.uniqueIdsOnScene)
             {
                 if (!uniqueId.Value)
