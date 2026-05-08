@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,6 +20,10 @@ public class AStarCell
 
 public class AStarPathFinding
 {
+    // Heuristic weight > 1 trades optimality for speed: search aims more directly at the goal,
+    // expanding far fewer cells. Path may be slightly longer but is found much faster.
+    private const float HeuristicWeight = 2.5f;
+
     private AStarCell[,] grid;
     private int gridWidth;
     private int gridHeight;
@@ -30,6 +34,16 @@ public class AStarPathFinding
     private bool[,] closedSet;
 
     private List<AStarCell>[] neighbors;
+
+    private readonly List<(float priority, AStarCell cell)> heapBuffer = new();
+
+    // How many A* nodes to expand per frame before yielding. Higher = faster
+    // completion but bigger frame spikes.
+    private const int NodesPerFrame = 500;
+
+    // Single A* instance is shared across all bots; serialize concurrent
+    // coroutine calls so they don't corrupt each other's buffers.
+    private bool isBusy;
 
     public AStarCell[,] Grid => grid;
 
@@ -51,6 +65,9 @@ public class AStarPathFinding
     {
         neighbors = new List<AStarCell>[gridWidth * gridHeight];
 
+        int[] dx = { -1, 1, 0, 0 };
+        int[] dy = { 0, 0, -1, 1 };
+
         for (int x = 0; x < gridWidth; x++)
         {
             for (int y = 0; y < gridHeight; y++)
@@ -58,120 +75,151 @@ public class AStarPathFinding
                 int index = x * gridHeight + y;
                 neighbors[index] = new List<AStarCell>();
 
-                int[] dx = { -1, 1, 0, 0 };
-                int[] dy = { 0, 0, -1, 1 };
-
                 for (int i = 0; i < 4; i++)
                 {
                     int newX = x + dx[i];
                     int newY = y + dy[i];
 
                     if (newX >= 0 && newX < gridWidth && newY >= 0 && newY < gridHeight)
-                    {
                         neighbors[index].Add(grid[newX, newY]);
-                    }
                 }
             }
         }
     }
 
-    public List<AStarCell> debugOpenSet = new();
-    public HashSet<AStarCell> debugClosedSet = new HashSet<AStarCell>();
-    public List<AStarCell> debugCurrentPath = new();
-
-    public List<AStarCell> FindPath(AStarCell startCell, AStarCell endCell)
+    public IEnumerator FindPath(AStarCell startCell, AStarCell endCell, List<AStarCell> outPath)
     {
- 
-        for (int x = 0; x < gridWidth; x++)
+        outPath.Clear();
+
+        // Wait if another coroutine is using the shared buffers
+        while (isBusy)
+            yield return null;
+        isBusy = true;
+
+        try
         {
-            for (int y = 0; y < gridHeight; y++)
-            {
-                gCost[x, y] = float.MaxValue;
-                hCost[x, y] = float.MaxValue;
-                parents[x, y] = null;
-                closedSet[x, y] = false;
-            }
-        }
-
-        List<AStarCell> openSet = new List<AStarCell>();
-
-        gCost[startCell.x, startCell.y] = 0;
-        hCost[startCell.x, startCell.y] = GetDistance(startCell, endCell);
-        openSet.Add(startCell);
-
-        while (openSet.Count > 0)
-        {
-            AStarCell currentCell = openSet[0];
-            for (int i = 1; i < openSet.Count; i++)
-            {
-                float fCost = gCost[openSet[i].x, openSet[i].y] + hCost[openSet[i].x, openSet[i].y];
-                float currentFCost = gCost[currentCell.x, currentCell.y] + hCost[currentCell.x, currentCell.y];
-
-                if (fCost < currentFCost || (fCost == currentFCost && hCost[openSet[i].x, openSet[i].y] < hCost[currentCell.x, currentCell.y]))
+            for (int x = 0; x < gridWidth; x++)
+                for (int y = 0; y < gridHeight; y++)
                 {
-                    currentCell = openSet[i];
+                    gCost[x, y] = float.MaxValue;
+                    hCost[x, y] = float.MaxValue;
+                    parents[x, y] = null;
+                    closedSet[x, y] = false;
                 }
-            }
 
-            openSet.Remove(currentCell);
-            closedSet[currentCell.x, currentCell.y] = true;
+            heapBuffer.Clear();
 
-            debugClosedSet.Add(currentCell);
-            debugOpenSet = new List<AStarCell>(openSet);
+            gCost[startCell.x, startCell.y] = 0;
+            hCost[startCell.x, startCell.y] = GetDistance(startCell, endCell);
+            HeapPush(startCell, hCost[startCell.x, startCell.y] * HeuristicWeight);
 
-            if (currentCell == endCell)
+            int processed = 0;
+
+            while (heapBuffer.Count > 0)
             {
-                debugCurrentPath = RetracePath(startCell, endCell);
-                return RetracePath(startCell, endCell);
-            }
+                AStarCell currentCell = HeapPop();
 
-            foreach (AStarCell neighbor in neighbors[currentCell.x * gridHeight + currentCell.y])
-            {
-                if (closedSet[neighbor.x, neighbor.y])
+                // Lazy deletion: node may have been re-added with a better cost
+                if (closedSet[currentCell.x, currentCell.y])
                     continue;
 
-                // Height difference check
-                if (Mathf.Abs(neighbor.height - currentCell.height) > 0.5f)
-                    continue;
+                closedSet[currentCell.x, currentCell.y] = true;
 
-                float stepCost = GetDistance(currentCell, neighbor) * neighbor.movementCost;
-                float tentativeGCost = gCost[currentCell.x, currentCell.y] + stepCost;
-
-                if (tentativeGCost < gCost[neighbor.x, neighbor.y])
+                if (currentCell == endCell)
                 {
-                    gCost[neighbor.x, neighbor.y] = tentativeGCost;
-                    hCost[neighbor.x, neighbor.y] = GetDistance(neighbor, endCell);
-                    parents[neighbor.x, neighbor.y] = currentCell;
+                    RetracePath(startCell, endCell, outPath);
+                    yield break;
+                }
 
-                    if (!openSet.Contains(neighbor))
+                foreach (AStarCell neighbor in neighbors[currentCell.x * gridHeight + currentCell.y])
+                {
+                    if (closedSet[neighbor.x, neighbor.y])
+                        continue;
+
+                    if (Mathf.Abs(neighbor.height - currentCell.height) > 0.5f)
+                        continue;
+
+                    float stepCost = GetDistance(currentCell, neighbor) * neighbor.movementCost;
+                    float tentativeGCost = gCost[currentCell.x, currentCell.y] + stepCost;
+
+                    if (tentativeGCost < gCost[neighbor.x, neighbor.y])
                     {
-                        openSet.Add(neighbor);
+                        gCost[neighbor.x, neighbor.y] = tentativeGCost;
+                        hCost[neighbor.x, neighbor.y] = GetDistance(neighbor, endCell);
+                        parents[neighbor.x, neighbor.y] = currentCell;
+                        HeapPush(neighbor, tentativeGCost + hCost[neighbor.x, neighbor.y] * HeuristicWeight);
                     }
+                }
+
+                if (++processed >= NodesPerFrame)
+                {
+                    processed = 0;
+                    yield return null;
                 }
             }
         }
-
-        return new List<AStarCell>();
+        finally
+        {
+            isBusy = false;
+        }
     }
 
-    private List<AStarCell> RetracePath(AStarCell startCell, AStarCell endCell)
+    private void HeapPush(AStarCell cell, float priority)
     {
-        List<AStarCell> path = new List<AStarCell>();
+        heapBuffer.Add((priority, cell));
+        int i = heapBuffer.Count - 1;
+        while (i > 0)
+        {
+            int parent = (i - 1) / 2;
+            if (heapBuffer[parent].priority <= heapBuffer[i].priority)
+                break;
+            (heapBuffer[parent], heapBuffer[i]) = (heapBuffer[i], heapBuffer[parent]);
+            i = parent;
+        }
+    }
+
+    private AStarCell HeapPop()
+    {
+        var top = heapBuffer[0].cell;
+        int last = heapBuffer.Count - 1;
+        heapBuffer[0] = heapBuffer[last];
+        heapBuffer.RemoveAt(last);
+
+        int i = 0;
+        int n = heapBuffer.Count;
+        while (true)
+        {
+            int left = 2 * i + 1;
+            int right = 2 * i + 2;
+            int smallest = i;
+            if (left < n && heapBuffer[left].priority < heapBuffer[smallest].priority)
+                smallest = left;
+            if (right < n && heapBuffer[right].priority < heapBuffer[smallest].priority)
+                smallest = right;
+            if (smallest == i)
+                break;
+            (heapBuffer[smallest], heapBuffer[i]) = (heapBuffer[i], heapBuffer[smallest]);
+            i = smallest;
+        }
+
+        return top;
+    }
+
+    private void RetracePath(AStarCell startCell, AStarCell endCell, List<AStarCell> outPath)
+    {
         AStarCell currentCell = endCell;
 
         while (currentCell != startCell)
         {
-            path.Add(currentCell);
+            outPath.Add(currentCell);
             currentCell = parents[currentCell.x, currentCell.y];
         }
-        path.Add(startCell);
-        path.Reverse();
-        return path;
+        outPath.Add(startCell);
+        outPath.Reverse();
     }
 
     private float GetDistance(AStarCell a, AStarCell b)
     {
-        // Manhattan distance for 4-directional grids
         return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y);
     }
 }
