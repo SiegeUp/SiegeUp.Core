@@ -492,5 +492,10 @@ namespace SiegeUp.Core
             int height = Mathf.Max(0, yMax - yMin);
             return new RectInt(xMin, yMin, width, height);
         }
+
+        public static float SnapToStep(float value, float min, float step)
+        {
+            return min + Mathf.Round((value - min) / step) * step;
+        }
     }
 }
