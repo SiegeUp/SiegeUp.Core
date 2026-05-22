@@ -12,9 +12,11 @@ namespace SiegeUp.Core
         [SerializeField] bool showMainBoundPointsOnGridGizmos = true;
         [SerializeField] bool showMainBoundPassablePointsOnGridGizmos = true;
         [SerializeField] bool only90DegreesRotation = false;
+        [SerializeField] bool noRotationMirroringInSymmetryMode = false;
 
         public BoundingBox MainBound => mainBoundingBox;
         public bool Only90DegreesRotation => only90DegreesRotation;
+        public bool NoRotationMirroringInSymmetryMode => noRotationMirroringInSymmetryMode;
 
         public List<Vector2Int> GetCurrentPassablePointsOnGrid()
         {
