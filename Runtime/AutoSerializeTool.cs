@@ -865,8 +865,11 @@ namespace SiegeUp.Core
             var prefabRef = targetObject.GetComponent<PrefabRef>();
             if (prefabRef != null)
             {
-                serializedGameObject.prefabRef = Service<PrefabManager>.instance.GetPrefab(prefabRef).GetComponent<PrefabRef>();
-                serializedGameObject.name = null;
+                var prefabGameObject = Service<PrefabManager>.instance.GetPrefab(prefabRef);
+                serializedGameObject.prefabRef = prefabGameObject.GetComponent<PrefabRef>();
+
+                var currentName = targetObject.name.Replace("(Clone)", "");
+                serializedGameObject.name = currentName == prefabGameObject.name ? null : currentName;
             }
             else
             {
@@ -1227,7 +1230,7 @@ namespace SiegeUp.Core
             else
             {
                 targetObject = restoreProcess.spawn(prefab, targetObjectPos, element.rotation, element.id);
-                targetObject.name = prefab.name;
+                targetObject.name = element.name ?? prefab.name;
             }
 
             if (targetObject == null)
