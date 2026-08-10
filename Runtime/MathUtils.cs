@@ -15,6 +15,8 @@ namespace SiegeUp.Core
         public static Vector2Int[] fourSides = { new(0, 1), new(1, 0), new(0, -1), new(-1, 0) };
         public static Vector2Int[] inCorners = { new(1, 1), new(1, -1), new(-1, -1), new(-1, 1) };
 
+        static readonly Vector2Int[] cornersThenSides = inCorners.Concat(fourSides).ToArray();
+
         public enum CompareOperation
         {
             More = 1,
@@ -46,19 +48,9 @@ namespace SiegeUp.Core
             return sb.ToString();
         }
 
-        static byte[] GetHash(string inputString)
-        {
-            using (HashAlgorithm algorithm = SHA256.Create())
-                return algorithm.ComputeHash(Encoding.UTF8.GetBytes(inputString));
-        }
-
         public static string GetHashString(string inputString)
         {
-            StringBuilder sb = new StringBuilder();
-            foreach (byte b in GetHash(inputString))
-                sb.Append(b.ToString("X2"));
-
-            return sb.ToString();
+            return GetHashString(Encoding.UTF8.GetBytes(inputString));
         }
 
         public static bool IsPointInRange(Vector3 point, Vector3 center, float range)
@@ -68,16 +60,14 @@ namespace SiegeUp.Core
             float diffY = point.y - center.y;
             float diffZ = point.z - center.z;
             var squareDist = diffX * diffX + diffY * diffY + diffZ * diffZ;
-            float rangeVal = range;
-            return squareDist < rangeVal * rangeVal;
+            return squareDist < range * range;
         }
 
         public static bool IsPointInRange2D(Vector3 point, Vector3 center, float range)
         {
             var diff = point - center;
             var squareDist = diff.x * diff.x + diff.z * diff.z;
-            float rangeVal = range;
-            return squareDist < rangeVal * rangeVal;
+            return squareDist < range * range;
         }
 
         public static bool IsRectInRange3D(Vector3 corner, Vector3 size, Vector3 pos, float range)
@@ -240,51 +230,44 @@ namespace SiegeUp.Core
             return new Vector2Int(RoundFloatToInt(point.x), RoundFloatToInt(point.y));
         }
 
-        public static Vector2Int GetMiddlePoint(List<Vector2Int> points)
-        {
-            if (points == null || points.Count == 0)
-                return Vector2Int.zero;
-
-            int sumX = 0;
-            int sumY = 0;
-            foreach (var point in points)
-            {
-                sumX += point.x;
-                sumY += point.y;
-            }
-
-            int averageX = sumX / points.Count;
-            int averageY = sumY / points.Count;
-
-            return new Vector2Int(averageX, averageY);
-        }
-
         public static Vector3 GetMiddlePoint(IEnumerable<Vector3> points)
         {
-            int count = points.Count();
-            if (count == 0)
-                return Vector3.zero;
-
-            float invCount = 1f / count;
+            int count = 0;
 
             float sumX = 0f;
             float sumY = 0f;
             float sumZ = 0f;
 
-            for (int i = 0; i < count; i++)
+            foreach (var point in points)
             {
-                Vector3 v = points.ElementAt(i);
-                sumX += v.x;
-                sumY += v.y;
-                sumZ += v.z;
+                sumX += point.x;
+                sumY += point.y;
+                sumZ += point.z;
+                count++;
             }
+
+            if (count == 0)
+                return Vector3.zero;
+
+            float invCount = 1f / count;
 
             return new Vector3(sumX * invCount, sumY * invCount, sumZ * invCount);
         }
 
-        public static List<Vector2Int> GetPointsAroundPoint(Vector2Int point)
+        public static List<Vector2Int> GetPointsAroundPoint(Vector2Int point, int radius = 1)
         {
-            return GetPointsAroundPoints(new List<Vector2Int> { point });
+            var pointsAround = new List<Vector2Int>();
+
+            for (int x = -radius; x <= radius; x++)
+            {
+                for (int y = -radius; y <= radius; y++)
+                {
+                    if (x != 0 || y != 0)
+                        pointsAround.Add(point + new Vector2Int(x, y));
+                }
+            }
+
+            return pointsAround;
         }
 
         public static List<Vector2Int> GetPointsAroundPoints(List<Vector2Int> points)
@@ -292,11 +275,9 @@ namespace SiegeUp.Core
             var pointsAround = new HashSet<Vector2Int>();
             var pointsSet = new HashSet<Vector2Int>(points);
 
-            Vector2Int[] allSides = { new(1, 1), new(1, -1), new(-1, -1), new(-1, 1), new(0, 1), new(1, 0), new(0, -1), new(-1, 0) };
-
             foreach (var point in points)
             {
-                foreach (var side in allSides)
+                foreach (var side in cornersThenSides)
                 {
                     var pointToCheck = point + side;
 
@@ -348,11 +329,6 @@ namespace SiegeUp.Core
             float distanceOffset = distance <= 1f ? 0.5f : 0;
             points = points.Where(i => IsRectInRange2D(rect.position, rect.size, i, distance + distanceOffset)).ToList();
 
-            foreach (var p in points)
-            {
-                Debug.DrawLine(p.GetX0Y(), p.GetX0Y() + Vector3.up * 4f, Color.green, 10f);
-            }
-            
             return points;
         }
 
@@ -410,32 +386,11 @@ namespace SiegeUp.Core
             return Math.Abs(target - floor) <= Math.Abs(target - ceil) ? floor : ceil;
         }
 
-        public static Vector3 GetRayIntersectionWithPlane(Ray ray, Vector3 planeNormal, Vector3 planePoint)
-        {
-            float denominator = Vector3.Dot(planeNormal, ray.direction);
-            if (Mathf.Abs(denominator) < Mathf.Epsilon)
-            {
-                return Vector3.zero;
-            }
-
-            float t = Vector3.Dot(planePoint - ray.origin, planeNormal) / denominator;
-            return ray.origin + t * ray.direction;
-        }
-
         public static Vector2Int ClampVector(Vector2Int value, Vector2Int min, Vector2Int max)
         {
             return new Vector2Int(
                 Mathf.Clamp(value.x, min.x, max.x),
                 Mathf.Clamp(value.y, min.y, max.y)
-            );
-        }
-
-        public static Vector3 ClampVector(Vector3 value, Vector3 min, Vector3 max)
-        {
-            return new Vector3(
-                Mathf.Clamp(value.x, min.x, max.x),
-                Mathf.Clamp(value.y, min.y, max.y),
-                Mathf.Clamp(value.z, min.z, max.z)
             );
         }
 
