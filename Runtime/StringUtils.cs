@@ -61,6 +61,12 @@ public static class StringUtils
             { KeyCode.KeypadMinus, "Num -/" },
             { KeyCode.KeypadPlus, "Num +/" },
             { KeyCode.Mouse2, "Mouse middle" },
+            { KeyCode.Minus, "-" },
+            { KeyCode.Equals, "=" },
+            { KeyCode.Comma, "," },
+            { KeyCode.Period, "." },
+            { KeyCode.LeftBracket, "[" },
+            { KeyCode.RightBracket, "]" },
         };
 
         if (keyCodes[0] == KeyCode.None)
