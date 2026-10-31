@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -155,11 +156,11 @@ namespace SiegeUp.Core
             public Vector3 size;
         }
 
-        static Dictionary<string, ClassReflectionCache> classReflectionCaches = new();
-        static Dictionary<string, bool> hasAutoSerializeAttributeMap = new();
-        static Dictionary<string, Type> cachedTypesMap = new();
-        static Dictionary<string, Type> nestedTypesMapLegacy = new();
-        static Dictionary<string, Type> nestedTypesMap = new();
+        static readonly ConcurrentDictionary<string, ClassReflectionCache> classReflectionCaches = new();
+        static readonly ConcurrentDictionary<string, bool> hasAutoSerializeAttributeMap = new();
+        static readonly ConcurrentDictionary<string, Type> cachedTypesMap = new();
+        static readonly ConcurrentDictionary<string, Type> nestedTypesMapLegacy = new();
+        static readonly ConcurrentDictionary<string, Type> nestedTypesMap = new();
 
         public static string ExtractId(GameObject targetObject)
         {
@@ -222,7 +223,7 @@ namespace SiegeUp.Core
                 return null;
 
             cache = new ClassReflectionCache { fields = fields };
-            classReflectionCaches.Add(type.FullName, cache);
+            classReflectionCaches[type.FullName] = cache;
             return cache;
         }
 
@@ -890,7 +891,7 @@ namespace SiegeUp.Core
             if (!hasAutoSerializeAttributeMap.TryGetValue(type.FullName, out result))
             {
                 result = System.Array.Find(type.GetCustomAttributes(true), item => item.GetType() == typeof(AutoSerializeAttribute)) != null;
-                hasAutoSerializeAttributeMap.Add(type.FullName, result);
+                hasAutoSerializeAttributeMap[type.FullName] = result;
             }
 
             return result;
@@ -960,7 +961,7 @@ namespace SiegeUp.Core
             if (!cachedTypesMap.TryGetValue(name, out result))
             {
                 result = System.Type.GetType(name);
-                cachedTypesMap.Add(name, result);
+                cachedTypesMap[name] = result;
             }
 
             return result;
@@ -988,7 +989,7 @@ namespace SiegeUp.Core
             if (!nestedTypesMapLegacy.TryGetValue(name, out result))
             {
                 result = GetNestedType(componentType, "Legacy_DATA");
-                nestedTypesMapLegacy.Add(name, result);
+                nestedTypesMapLegacy[name] = result;
             }
 
             return result;
@@ -1001,7 +1002,7 @@ namespace SiegeUp.Core
             if (!nestedTypesMap.TryGetValue(name, out result))
             {
                 result = GetNestedType(componentType, "DATA");
-                nestedTypesMap.Add(name, result);
+                nestedTypesMap[name] = result;
             }
 
             return result;
