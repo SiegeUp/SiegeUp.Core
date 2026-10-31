@@ -156,11 +156,37 @@ namespace SiegeUp.Core
             public Vector3 size;
         }
 
-        static readonly ConcurrentDictionary<string, ClassReflectionCache> classReflectionCaches = new();
-        static readonly ConcurrentDictionary<string, bool> hasAutoSerializeAttributeMap = new();
+        // How a component type turns into its DATA struct: a static DATA_<Type>.DATA_Serialize(component)
+        // generated class, or the component's own DATA_Serialize() next to a nested DATA type.
+        class ComponentSerializer
+        {
+            public Type dataClass;
+            public MethodInfo serializeMethod;
+            public bool isStatic;
+        }
+
+        const string CloneSuffix = "(Clone)";
+
+        static readonly ConcurrentDictionary<Type, ClassReflectionCache> classReflectionCaches = new();
+        static readonly ConcurrentDictionary<Type, bool> hasAutoSerializeAttributeMap = new();
         static readonly ConcurrentDictionary<string, Type> cachedTypesMap = new();
-        static readonly ConcurrentDictionary<string, Type> nestedTypesMapLegacy = new();
-        static readonly ConcurrentDictionary<string, Type> nestedTypesMap = new();
+        static readonly ConcurrentDictionary<Type, Type> nestedTypesMapLegacy = new();
+        static readonly ConcurrentDictionary<Type, Type> nestedTypesMap = new();
+        static readonly ConcurrentDictionary<Type, Type> dataClassMap = new();
+        static readonly ConcurrentDictionary<Type, ComponentSerializer> componentSerializers = new();
+        // Prefab assets don't change while the game runs, so what the serializer needs from one is read once.
+        class PrefabInfo
+        {
+            public PrefabRef prefabRef;
+            public string name;
+            public Component[] components;
+        }
+
+        static readonly Dictionary<GameObject, PrefabInfo> prefabInfoCache = new();
+        static List<Component> componentsBuffer = new();
+
+        [ThreadStatic] static byte[] serializeBuffer;
+        [ThreadStatic] static object[] serializeArgs;
 
         public static string ExtractId(GameObject targetObject)
         {
@@ -205,7 +231,7 @@ namespace SiegeUp.Core
         public static ClassReflectionCache GetClassReflectionCache(Type type)
         {
             ClassReflectionCache cache;
-            if (classReflectionCaches.TryGetValue(type.FullName, out cache))
+            if (classReflectionCaches.TryGetValue(type, out cache))
             {
                 return cache;
             }
@@ -223,7 +249,7 @@ namespace SiegeUp.Core
                 return null;
 
             cache = new ClassReflectionCache { fields = fields };
-            classReflectionCaches[type.FullName] = cache;
+            classReflectionCaches[type] = cache;
             return cache;
         }
 
@@ -474,13 +500,18 @@ namespace SiegeUp.Core
             return serializedFields;
         }
 
+        // One scratch buffer per thread; a reentrant call (the slot is empty) falls back to a fresh one.
         public static byte[] Serialize(object obj, Type type)
         {
-            var bytes = new byte[1024];
+            var bytes = serializeBuffer ?? new byte[4096];
+            serializeBuffer = null;
             int pos = 0;
             Write(ref bytes, ref pos, type, obj);
-            Array.Resize(ref bytes, pos);
-            return bytes;
+            var result = new byte[pos];
+            Buffer.BlockCopy(bytes, 0, result, 0, pos);
+            if (bytes.Length <= 1 << 20)
+                serializeBuffer = bytes;
+            return result;
         }
 
         public static void WriteObject(ref byte[] dest, ref int pos, object obj)
@@ -861,97 +892,132 @@ namespace SiegeUp.Core
 
         public static SerializedGameObjectBin SerializeBin(GameObject targetObject)
         {
+            return SerializeBin(targetObject.GetComponent<UniqueId>());
+        }
+
+        public static SerializedGameObjectBin SerializeBin(UniqueId uniqueId)
+        {
+            var targetObject = uniqueId.gameObject;
             var serializedGameObject = new SerializedGameObjectBin();
-            serializedGameObject.id = targetObject.GetComponent<UniqueId>().GetGuid();
+            serializedGameObject.id = uniqueId.GetGuid();
             var prefabRef = targetObject.GetComponent<PrefabRef>();
+            PrefabInfo prefab = null;
             if (prefabRef != null)
             {
-                var prefabGameObject = Service<PrefabManager>.instance.GetPrefab(prefabRef);
-                serializedGameObject.prefabRef = prefabGameObject.GetComponent<PrefabRef>();
-
-                var currentName = targetObject.name.Replace("(Clone)", "");
-                serializedGameObject.name = currentName == prefabGameObject.name ? null : currentName;
+                prefab = GetPrefabInfo(Service<PrefabManager>.instance.GetPrefab(prefabRef));
+                serializedGameObject.prefabRef = prefab.prefabRef;
+                serializedGameObject.name = NameUnlessPrefabs(targetObject.name, prefab.name);
             }
             else
             {
                 serializedGameObject.name = targetObject.name;
             }
 
-            serializedGameObject.position = targetObject.transform.position;
-            serializedGameObject.rotation = targetObject.transform.rotation;
+            targetObject.transform.GetPositionAndRotation(out serializedGameObject.position, out serializedGameObject.rotation);
 
-            SerializeComponentsBin(serializedGameObject, targetObject, serializedGameObject.prefabRef);
+            SerializeComponentsBin(serializedGameObject, targetObject, prefab);
 
             return serializedGameObject;
+        }
+
+        // The name is stored only when it differs from the prefab's once "(Clone)" is stripped, as
+        // name.Replace("(Clone)", "") == prefabName would say, without allocating for the usual case.
+        static string NameUnlessPrefabs(string name, string prefabName)
+        {
+            if (name == prefabName)
+                return null;
+            if (name.Length == prefabName.Length + CloneSuffix.Length
+                && string.CompareOrdinal(name, 0, prefabName, 0, prefabName.Length) == 0
+                && string.CompareOrdinal(name, prefabName.Length, CloneSuffix, 0, CloneSuffix.Length) == 0
+                && prefabName.IndexOf(CloneSuffix, StringComparison.Ordinal) < 0)
+                return null;
+            var currentName = name.Replace(CloneSuffix, "");
+            return currentName == prefabName ? null : currentName;
         }
 
         static bool HasAutoSerializeAttribute(Type type)
         {
             bool result = false;
-            if (!hasAutoSerializeAttributeMap.TryGetValue(type.FullName, out result))
+            if (!hasAutoSerializeAttributeMap.TryGetValue(type, out result))
             {
                 result = System.Array.Find(type.GetCustomAttributes(true), item => item.GetType() == typeof(AutoSerializeAttribute)) != null;
-                hasAutoSerializeAttributeMap[type.FullName] = result;
+                hasAutoSerializeAttributeMap[type] = result;
             }
 
             return result;
         }
 
+        static PrefabInfo GetPrefabInfo(GameObject prefabGameObject)
+        {
+            if (!prefabInfoCache.TryGetValue(prefabGameObject, out var info))
+            {
+                info = new PrefabInfo {
+                    prefabRef = prefabGameObject.GetComponent<PrefabRef>(),
+                    name = prefabGameObject.name,
+                    components = prefabGameObject.GetComponents<Component>()
+                };
+                prefabInfoCache[prefabGameObject] = info;
+            }
+            return info;
+        }
 
         public static bool IsSerializableComponent(Type componentType)
         {
             return !(typeof(Transform).IsAssignableFrom(componentType)) && ReflectionUtils.GetComponentId(componentType) != -1;
         }
 
-        static void SerializeComponentsBin(SerializedGameObjectBin serializedGameObject, GameObject targetObject, PrefabRef prefab)
+        static void SerializeComponentsBin(SerializedGameObjectBin serializedGameObject, GameObject targetObject, PrefabInfo prefab)
         {
             serializedGameObject.serializedComponents = new List<SerializedComponentBin>();
-            var prefabComponents = prefab ? prefab.GetComponents<Component>() : null;
-            var components = targetObject.GetComponents<Component>();
-            if (prefabComponents != null && components.Length != prefabComponents.Length)
+            var prefabComponents = prefab?.components;
+            var components = componentsBuffer ?? new List<Component>();
+            componentsBuffer = null;
+            targetObject.GetComponents(components);
+            if (prefabComponents != null && components.Count != prefabComponents.Length)
                 prefabComponents = null;
-            for (int i = 0; i < components.Length; i++)
+            try
             {
-                var component = components[i];
-                if (component == null)
-                    continue;
+                for (int i = 0; i < components.Count; i++)
+                    SerializeComponentBin(serializedGameObject, components[i], prefabComponents != null ? prefabComponents[i] : null);
+            }
+            finally
+            {
+                components.Clear();
+                componentsBuffer = components;
+            }
+        }
 
-                var componentType = component.GetType();
+        static void SerializeComponentBin(SerializedGameObjectBin serializedGameObject, Component component, Component prefabComponent)
+        {
+            if (component == null)
+                return;
 
-                if (componentType == typeof(Transform))
-                    continue;
+            var componentType = component.GetType();
 
-                int componentId = ReflectionUtils.GetComponentId(component.GetType());
+            if (componentType == typeof(Transform))
+                return;
 
-                if (componentId == -1)
-                    continue;
+            int componentId = ReflectionUtils.GetComponentId(componentType);
 
-                object baseComponent = null;
-                if (prefabComponents != null)
-                {
-                    baseComponent = prefabComponents[i];
-                    if (baseComponent.GetType() != component.GetType())
-                        baseComponent = null;
-                }
+            if (componentId == -1)
+                return;
 
-                var serializedComponent = new SerializedComponentBin {
-                    id = componentId,
-                    autoSerialize = new AutoSerializedObjectBin { fields = AutoSerializeTool.SerializeObjectFields(component, baseComponent) }
-                };
+            object baseComponent = prefabComponent != null && prefabComponent.GetType() == componentType ? prefabComponent : null;
 
-                object serializedStruct = SerializeComponent(componentType, component);
-                if (serializedStruct != null)
-                {
-                    var bytes = AutoSerializeTool.Serialize(serializedStruct, serializedStruct.GetType());
-                    serializedComponent.data = bytes;
-                }
+            var serializedComponent = new SerializedComponentBin {
+                id = componentId,
+                autoSerialize = new AutoSerializedObjectBin { fields = SerializeObjectFields(component, baseComponent) }
+            };
 
-                if (serializedComponent.data != null
-                    || serializedComponent.autoSerialize.fields.Count > 0
-                    || HasAutoSerializeAttribute(componentType))
-                {
-                    serializedGameObject.serializedComponents.Add(serializedComponent);
-                }
+            object serializedStruct = SerializeComponent(componentType, component);
+            if (serializedStruct != null)
+                serializedComponent.data = Serialize(serializedStruct, serializedStruct.GetType());
+
+            if (serializedComponent.data != null
+                || serializedComponent.autoSerialize.fields.Count > 0
+                || HasAutoSerializeAttribute(componentType))
+            {
+                serializedGameObject.serializedComponents.Add(serializedComponent);
             }
         }
 
@@ -984,12 +1050,11 @@ namespace SiegeUp.Core
 
         static Type GetNestedTypeCachedLegacy(Type componentType)
         {
-            var name = componentType.FullName;
             Type result;
-            if (!nestedTypesMapLegacy.TryGetValue(name, out result))
+            if (!nestedTypesMapLegacy.TryGetValue(componentType, out result))
             {
                 result = GetNestedType(componentType, "Legacy_DATA");
-                nestedTypesMapLegacy[name] = result;
+                nestedTypesMapLegacy[componentType] = result;
             }
 
             return result;
@@ -997,58 +1062,81 @@ namespace SiegeUp.Core
 
         static Type GetNestedTypeCached(Type componentType)
         {
-            var name = componentType.FullName;
             Type result;
-            if (!nestedTypesMap.TryGetValue(name, out result))
+            if (!nestedTypesMap.TryGetValue(componentType, out result))
             {
                 result = GetNestedType(componentType, "DATA");
-                nestedTypesMap[name] = result;
+                nestedTypesMap[componentType] = result;
             }
 
             return result;
         }
 
+        static Type GetDataClassCached(Type componentType)
+        {
+            Type result;
+            if (!dataClassMap.TryGetValue(componentType, out result))
+            {
+                result = GetTypeCached("DATA_" + componentType.Name);
+                dataClassMap[componentType] = result;
+            }
+
+            return result;
+        }
+
+        static ComponentSerializer GetComponentSerializer(Type componentType)
+        {
+            if (componentSerializers.TryGetValue(componentType, out var serializer))
+                return serializer;
+
+            serializer = new ComponentSerializer { dataClass = GetDataClassCached(componentType) };
+            if (serializer.dataClass != null)
+            {
+                serializer.serializeMethod = serializer.dataClass.GetMethod("DATA_Serialize");
+                serializer.isStatic = true;
+            }
+            else if (GetNestedTypeCached(componentType) != null)
+            {
+                serializer.serializeMethod = ReflectionUtils.GetMethod(componentType, "DATA_Serialize");
+            }
+            componentSerializers[componentType] = serializer;
+            return serializer;
+        }
+
         static object SerializeComponent(Type componentType, Component component)
         {
-            object serializedStruct = null;
-            var serializeClass = GetTypeCached("DATA_" + componentType.Name);
-            if (serializeClass != null)
-            {
-                var serializeMethod = serializeClass.GetMethod("DATA_Serialize");
-                serializedStruct = serializeMethod.Invoke(null, new object[] { component });
-            }
-            else
-            {
-                var dataStructType = GetNestedTypeCached(componentType);
-                if (dataStructType != null)
-                {
-                    var serializeMethod = ReflectionUtils.GetMethod(componentType, "DATA_Serialize");
+            var serializer = GetComponentSerializer(componentType);
+            if (serializer.serializeMethod == null)
+                return null;
 
-                    if (serializeMethod != null)
-                    {
-                        try
-                        {
-                            serializedStruct = serializeMethod.Invoke(component, null);
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogError("Can't serialize component " + component.GetType().Name);
-                            Debug.LogException(e);
-                        }
-                    }
-                }
+            if (serializer.isStatic)
+            {
+                var args = serializeArgs ??= new object[1];
+                args[0] = component;
+                var result = serializer.serializeMethod.Invoke(null, args);
+                args[0] = null;
+                return result;
             }
 
-            return serializedStruct;
+            try
+            {
+                return serializer.serializeMethod.Invoke(component, null);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Can't serialize component " + component.GetType().Name);
+                Debug.LogException(e);
+                return null;
+            }
         }
 
 
         public static List<SerializedGameObjectBin> SerializeGameObjects(UniqueId[] uniqueIds)
         {
-            var elements = new List<SerializedGameObjectBin>();
+            var elements = new List<SerializedGameObjectBin>(uniqueIds.Length);
 
             foreach (var uniqueId in uniqueIds)
-                elements.Add(SerializeBin(uniqueId.gameObject));
+                elements.Add(SerializeBin(uniqueId));
 
             return elements;
         }
@@ -1057,7 +1145,7 @@ namespace SiegeUp.Core
         {
             try
             {
-                var deserializeClass = GetTypeCached("DATA_" + componentType.Name);
+                var deserializeClass = GetDataClassCached(componentType);
                 if (deserializeClass != null)
                 {
                     var dataStructType = deserializeClass.GetNestedType("DATA");
